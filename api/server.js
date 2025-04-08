@@ -3,6 +3,9 @@ import ProductRouter from './routes/productRouter.js'
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 import cors from 'cors'
+import PaymentRouter from './routes/PaymentRouter.js'
+import mailRouter from './routes/MailRouter.js'
+import AuthRouter from './routes/AuthRouter.js'
 
 
 
@@ -13,6 +16,9 @@ appServer.use(e.json())
 appServer.use(cors())
 
 appServer.use('/v1/products', ProductRouter)
+appServer.use('/v1/checkout', PaymentRouter)
+appServer.use('/v1/mail', mailRouter)
+appServer.use('/v1/auth', AuthRouter)
 
 
 

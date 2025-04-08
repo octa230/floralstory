@@ -18,17 +18,13 @@ const ProductScreen = () => {
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 })
   const [position, setPosition] = useState({ x: 0, y: 0, mouseX: 0, mouseY: 0 })
   const [quantity, setQuantity] = useState(1)
-  
-  
-  //const [showAccessoriesModal, setShowAccessoriesModal] = useState(false)
-  //const [selectedAccessories, setSelectedAccessories] = useState([])
-  //const [accessoryQuantities, setAccessoryQuantities] = useState({});
-
-  const [showAccessoriesModal, setShowAccessoriesModal] = useState(false);
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-  const [accessoryQuantities, setAccessoryQuantities] = useState({});
-
-  
+  const [isVisible, setIsVisible] = useState(false)
+  const [accessories, setccessories] = useState([
+    {name:'book', price: 10, inStock: 3, image:"https://www.floralshopuae.com/wp-content/uploads/2025/02/red-rose-bouquet-delivery-uae-300x300.jpg"},
+    {name:'balloon', price: 10, inStock: 3, image:"https://www.floralshopuae.com/wp-content/uploads/2025/02/red-rose-bouquet-delivery-uae-300x300.jpg"},
+    {name:'socks', price: 10, inStock: 3, image:"https://www.floralshopuae.com/wp-content/uploads/2025/02/red-rose-bouquet-delivery-uae-300x300.jpg"},
+    {name:'bear', price: 10, inStock: 3, image:"https://www.floralshopuae.com/wp-content/uploads/2025/02/red-rose-bouquet-delivery-uae-300x300.jpg"},
+  ])
 
   const MAGNIFIER_SIZE = 150
   const ZOOM_LEVEL = 2
@@ -36,14 +32,6 @@ const ProductScreen = () => {
   const { date, slot, city } = useOrderDetails()
   const { addItem } = useCartStore()
   const router = useRouter()
-
-  // Sample accessories data - consider moving to API or props
-  const accessories = [
-    { _id: 'acc1', name: 'book', price: 10, inStock: 3, image: "https://www.floralshopuae.com/wp-content/uploads/2025/02/red-rose-bouquet-delivery-uae-300x300.jpg" },
-    { _id: 'acc2', name: 'balloon', price: 10, inStock: 3, image: "https://www.floralshopuae.com/wp-content/uploads/2025/02/red-rose-bouquet-delivery-uae-300x300.jpg" },
-    { _id: 'acc3', name: 'socks', price: 10, inStock: 3, image: "https://www.floralshopuae.com/wp-content/uploads/2025/02/red-rose-bouquet-delivery-uae-300x300.jpg" },
-    { _id: 'acc4', name: 'bear', price: 10, inStock: 3, image: "https://www.floralshopuae.com/wp-content/uploads/2025/02/red-rose-bouquet-delivery-uae-300x300.jpg" },
-  ]
 
   useEffect(() => {
     const getProduct = async () => {
@@ -70,52 +58,23 @@ const ProductScreen = () => {
     setQuantity(newQuantity)
   }
 
-  const handleAccessoryQuantityChange = (accessoryId, newQuantity) => {
-    setAccessoryQuantities(prev => ({
-      ...prev,
-      [accessoryId]: newQuantity
-    }));
-  };
-
-
-
   const handleAddToCart = () => {
-    if (!product) return;
+    if (!product) return
     
-    // First show accessories selection modal if not shown yet
-    if (!showAccessoriesModal && accessories.length > 0) {
-      setShowAccessoriesModal(true);
-      return;
-    }
-    
-    // Prepare the item with selected accessories
-    const selectedAccessories = accessories
-    .filter(acc => accessoryQuantities[acc._id] > 0)
-    .map(acc => ({
-      ...acc,
-      quantity: accessoryQuantities[acc._id]
-    }));
+    addItem({
+      ...product,
+      quantity,
+      deliveryDate: date,
+      deliverySlot: slot
+    })
+    console.log(getCartItems())
+    setIsVisible(true)
+  }
 
-  addItem({
-    ...product,
-    quantity,
-    deliveryDate: date,
-    deliverySlot: slot,
-    accessories: selectedAccessories
-  }); 
-
-    // Add to cart
-    //addItem(cartItem);
-    
-    // Show confirmation before redirecting
-    setShowAccessoriesModal(false);
-    setShowConfirmationModal(true);
-  };
-
-  const handleConfirm = () => {
-    setShowConfirmationModal(false);
+  const handleCloseModal=()=>{
+    setIsVisible(false);
     router.push('/cart');
-  };
+  }
 
   const handleMouseEnter = (e) => {
     const { width, height } = e.currentTarget.getBoundingClientRect()
@@ -140,6 +99,7 @@ const ProductScreen = () => {
       mouseY: y - (MAGNIFIER_SIZE / 2),
     })
   }
+
 
   if (loading) return <div className="text-center py-5"><div className="spinner-border"></div></div>
   if (!product) return <div className="alert alert-danger">Product not found</div>
@@ -198,7 +158,7 @@ const ProductScreen = () => {
             </p>
             
             <MDBAccordion initialActive={0} className="mb-4">
-              <MDBAccordionItem collapseId={1} headerTitle="SELECT DETAILS">
+              <MDBAccordionItem collapseId={1} headerTitle="Select Time Slot">
                 <TimeSlotSelector />
               </MDBAccordionItem>
             </MDBAccordion>
@@ -208,7 +168,6 @@ const ProductScreen = () => {
             </div>
           </div>
         </div>
-
 
         {/* Action Column */}
         <div className="col-lg-3 col-md-12 mt-md-0 mt-3">
@@ -250,16 +209,17 @@ const ProductScreen = () => {
               </div>
             )}
             
-            <MDBBtn
-                disabled={!slot || !date || !product.inStock} 
-                onClick={handleAddToCart}
-                color="dark" 
-                ripple="true" 
-                rippleColor="light" 
-                className="w-100 mb-2 py-2"
+            <MDBBtn data-mdb-modal-init data-mdb-target="#accessories-modal"
+              disabled={!slot || !date || !product.inStock} 
+              onClick={handleAddToCart}
+              color="dark" 
+              ripple="true" 
+              rippleColor="light" 
+              className="w-100 mb-2 py-2"
             >
-            {showAccessoriesModal ? 'CONFIRM SELECTION' : 'ADD TO BASKET'}
+              ADD TO BASKET
             </MDBBtn>
+            
             <MDBBtn data-mdb-modal-init data-mdb-target="#accessories-modal"
               disabled={!slot || !date || !product.inStock}
               color="primary" 
@@ -281,73 +241,22 @@ const ProductScreen = () => {
           </div>
         </div>
       </div>
-
-      {/* Accessories Modal */}
-      <div className="container container-fluid mt-4">
-      {/* ... existing product display code ... */}
-
-      {/* Accessories Selection Modal */}
-      {showAccessoriesModal && (
-        <div className='modal' style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className='modal-dialog modal-lg'>
-            <div className='modal-content'>
-              <div className='modal-header'>
-                <h5 className='modal-title'>Select Accessories</h5>
-                <button type="button" className="btn-close" onClick={() => setShowAccessoriesModal(false)}></button>
-              </div>
-              <div className='modal-body'>
-                <div className='row'>
-                  {accessories.map((accessory) => (
-                    <div key={accessory._id} className='col-md-6 mb-3'>
-                      <Accessory 
-                        accessory={accessory}
-                        onQuantityChange={handleAccessoryQuantityChange}
-                        initialQuantity={accessoryQuantities[accessory._id] || 0}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className='modal-footer'>
-                <MDBBtn color='secondary' onClick={() => setShowAccessoriesModal(false)}>
-                  Cancel
-                </MDBBtn>
-                <MDBBtn 
-                  color='primary' 
-                  onClick={handleAddToCart}
-                >
-                  Add to Cart
-                </MDBBtn>
-              </div>
+      {isVisible && (
+      <div className='modal' style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className='modal-dialog'>
+          <div className='modal-content'>
+            <div className='modal-body'>
+              {accessories.map((acc, index) => (
+                <Accessory accessory={acc}/>
+              ))}
+            </div>
+            <div className='modal-footer'>
+              <MDBBtn onClick={handleCloseModal}>Close and Go to Cart</MDBBtn>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Confirmation Modal */}
-      {showConfirmationModal && (
-        <div className='modal' style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className='modal-dialog'>
-            <div className='modal-content'>
-              <div className='modal-header'>
-                <h5 className='modal-title'>Added to Cart</h5>
-              </div>
-              <div className='modal-body'>
-                <p>Your items have been added to the cart!</p>
-                <div className="d-flex gap-2">
-                  <MDBBtn color='light' onClick={() => setShowConfirmationModal(false)}>
-                    Continue Shopping
-                  </MDBBtn>
-                  <MDBBtn color='primary' onClick={handleConfirm}>
-                    View Cart
-                  </MDBBtn>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    )}
     </div>
   )
 }

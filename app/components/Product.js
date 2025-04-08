@@ -1,31 +1,64 @@
 import Link from 'next/link'
 import React from 'react'
+import { 
+  MDBCard, 
+  MDBCardBody, 
+  MDBCardTitle, 
+  MDBCardText, 
+  MDBCardImage, 
+  MDBRow, 
+  MDBCol,
+  MDBBadge,
+  MDBIcon 
+} from 'mdb-react-ui-kit'
 
-const Product = (props) => {
-    const {product} = props
+const ProductCard = ({ product }) => {
   return (
-    <div className='card py-3' style={{maxWidth: "540px"}}>
-        <Link href={`/product/${product.slug}`} passHref>
-        <div className='row g-0'>
-            <div className='col-md-4 col-sm-12'>
-                <img src={product.image} className='img-fluid rounded-start' alt={product.slug}/>
-            </div>
-            <div className='col-md-8'>
-            <div className='card-body'>
-                <h5 className='card-title'>{product.name}</h5>
-                <p className='card-text'>
-                    {product.description}
-                </p>
-            </div>
-            <div className='card-footer'>
-            <p className='text-muted'>{product.price}</p>
-            <p className='text-muted'>{product.inStock || 0}</p>
-        </div>
-        </div>
-        </div>
-    </Link>
-    </div>
+    <MDBCard className='mb-4 shadow-sm hover-shadow' style={{ maxWidth: '540px' }}>
+      <Link href={`/product/${product.slug}`} passHref legacyBehavior>
+        <MDBRow className='g-0 align-items-center' tag="a">
+          <MDBCol md='4' className='p-2'>
+            <MDBCardImage
+              src={product.image}
+              alt={product.name}
+              fluid
+              className='rounded-3'
+              style={{ height: '180px', objectFit: 'cover' }}
+            />
+          </MDBCol>
+          
+          <MDBCol md='8'>
+            <MDBCardBody>
+              <MDBCardTitle className='fw-bold'>{product.name}</MDBCardTitle>
+              <MDBCardText className='text-muted mb-2 text-truncate' style={{ maxHeight: '3.6em' }}>
+                {product.description}
+              </MDBCardText>
+              
+              <div className='d-flex justify-content-between align-items-center'>
+                <div>
+                  <span className='h5 text-primary'>AED {product.price}</span>
+                  {product.inStock > 0 ? (
+                    <MDBBadge pill color='success' className='ms-2'>
+                      <MDBIcon icon='check' className='me-1' /> In Stock
+                    </MDBBadge>
+                  ) : (
+                    <MDBBadge pill color='danger' className='ms-2'>
+                      <MDBIcon icon='times' className='me-1' /> Out of Stock
+                    </MDBBadge>
+                  )}
+                </div>
+                
+                <div className='text-muted small'>
+                  <MDBIcon icon='box' className='me-1' /> 
+                  {product.inStock || 0} available
+                </div>
+              </div>
+            </MDBCardBody>
+          </MDBCol>
+        </MDBRow>
+      </Link>
+    </MDBCard>
   )
 }
 
-export default Product
+export default ProductCard

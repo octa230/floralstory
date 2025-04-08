@@ -40,3 +40,62 @@ a {
     color-scheme: dark;
   }
 }
+
+/* Main container */
+.checkout-container {
+  padding: 2rem;
+  max-width: 1800px;
+  margin: 0 auto;
+}
+
+/* Order summary section */
+.order-summary {
+  padding-right: 2rem;
+}
+
+.order-summary .card {
+  border-radius: 12px;
+  background: #fff;
+}
+
+/* Payment section */
+.payment-section {
+  padding-left: 1.5rem;
+}
+
+.payment-section .card {
+  border-radius: 12px;
+  background: #fff;
+}
+
+/* Payment form styling */
+.payment-form {
+  margin-top: 1.5rem;
+}
+
+/* Stripe element container */
+.StripeElement {
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  background: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .checkout-container {
+    padding: 1rem;
+    flex-direction: column;
+  }
+  
+  .order-summary, 
+  .payment-section {
+    padding: 0;
+    width: 100%;
+  }
+  
+  .payment-section {
+    margin-top: 2rem;
+  }
+}

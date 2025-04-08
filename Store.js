@@ -1,154 +1,181 @@
-import { createContext, useReducer } from 'react';
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-export const Store = createContext();
+export const useUserStore = create(
+  persist(
+    (set) => ({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      
+      // Actions
+      login: (userData, authToken) => set({ 
+        user: userData, 
+        token: authToken,
+        isAuthenticated: true
+      }),
+      logout: () => set({ 
+        user: null, 
+        token: null,
+        isAuthenticated: false 
+      }),
+      updateUser: (userData) => set({ user: userData })
+    }),
+    {
+      name: 'user-storage',
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token
+      })
+    }
+  )
+);
 
+export const useOrderDetails = create(
+  persist(
+    (set) => ({
+      date: null,
+      city: null,
+      slot: null,
+      
+      // Actions
+      saveDetails: (detailsData) => set({ 
+        date: detailsData.date, 
+        city: detailsData.city,
+        slot: detailsData.slot
+      }),
+      deleteDetails: () => set({ 
+        date: null, 
+        city: null,
+        slot: null 
+      }),
+      updateDetails: (detailsData) => set(detailsData)
+    }),
+    {
+      name: 'order-storage',
+      partialize: (state) => ({
+        date: state.date,
+        city: state.city,
+        slot: state.slot
+      })
+    }
+  )
+);
 
+export const useCartStore = create(
+  persist(
+    (set, get) => ({
+      items: [],
+      totalPrice: 0,
 
-const initialState = {
-  fullBox: false,
-  signInDate: localStorage.getItem('lastSignIn'),
-  categories: localStorage.getItem('yardCategories')
-  ? JSON.parse(localStorage.getItem('yardCategories'))
-  : [],
-  shops: localStorage.getItem('yardShops')
-  ? JSON.parse(localStorage.getItem('yardShops'))
-  : [],
-  userInfo: localStorage.getItem('userInfo')
-    ? JSON.parse(localStorage.getItem('userInfo'))
-    : null,
-  cart: {
-    userTrip: localStorage.getItem('trip')
-      ? JSON.parse(localStorage.getItem('trip'))
-      : null,
-    shippingAddress: localStorage.getItem('shippingAddress')
-      ? JSON.parse(localStorage.getItem('shippingAddress'))
-      : { location: {} },
-    paymentMethod: localStorage.getItem('paymentMethod')
-      ? localStorage.getItem('paymentMethod')
-      : '',
-    cartItems: localStorage.getItem('cartItems')
-      ? JSON.parse(localStorage.getItem('cartItems'))
-      : [],
-    timeslot: localStorage.getItem('timeSlot')
-      ? JSON.parse(localStorage.getItem('timeSlot'))
-      : {},
-    deliveryDate: localStorage.getItem('deliveryDate')
-      ? JSON.parse(localStorage.getItem('deliveryDate'))
-      : null
-  },
+      addItem: (item) => set(state => {
+        // Generate a unique cartId for each item added
+        const cartId = Date.now().toString();
+        const itemWithCartId = { ...item, cartId };
+        
+        return {
+          items: [...state.items, itemWithCartId],
+          totalPrice: calculateTotalWithAccessories([...state.items, itemWithCartId])
+        };
+      }),
+      
+      // Actions
+      updateItemQuantity: (cartId, change) => set(state => {
+        const updatedItems = state.items.map(item => {
+          if (item.cartId === cartId) {
+            const newQuantity = Math.max(1, (item.quantity || 1) + change);
+            return { ...item, quantity: newQuantity };
+          }
+          return item;
+        });
+        
+        return {
+          items: updatedItems,
+          totalPrice: calculateTotalWithAccessories(updatedItems)
+        };
+      }),
+
+      removeItem: (cartId) => set(state => {
+        const updatedItems = state.items.filter(i => i.cartId !== cartId);
+        return {
+          items: updatedItems,
+          totalPrice: calculateTotalWithAccessories(updatedItems)
+        };
+      }),
+      
+      addAccessoryToItem: (itemId, accessory) => set(state => {
+        const updatedItems = state.items.map(item => {
+          if (item._id === itemId) {
+            return {
+              ...item,
+              accessories: [
+                ...(item.accessories || []),
+                accessory
+              ]
+            };
+          }
+          return item;
+        });
+        
+        return {
+          items: updatedItems,
+          totalPrice: calculateTotalWithAccessories(updatedItems)
+        };
+      }),
+      
+      removeAccessoryFromItem: (itemId, accessoryId) => set(state => {
+        const updatedItems = state.items.map(item => {
+          if (item._id === itemId) {
+            return {
+              ...item,
+              accessories: (item.accessories || []).filter(
+                acc => acc._id !== accessoryId
+              )
+            };
+          }
+          return item;
+        });
+        
+        return {
+          items: updatedItems,
+          totalPrice: calculateTotalWithAccessories(updatedItems)
+        };
+      }),
+      
+      clearCart: () => set({ items: [], totalPrice: 0 })
+      // ... other existing actions (removeItem, clearCart)
+    }),
+    {
+      name: 'cart-storage',
+      getStorage: () => localStorage,
+    }
+  )
+);
+
+// Updated calculation to include accessories
+const calculateTotalWithAccessories = (items) => {
+  return items.reduce((total, item) => {
+    const itemTotal = item.price * (item.quantity || 1);
+    const accessoriesTotal = (item.accessories || []).reduce(
+      (accTotal, accessory) => accTotal + (accessory.price * (accessory.quantity || 1)),
+      0
+    );
+    return total + itemTotal + accessoriesTotal;
+  }, 0);
 };
 
 
 
+// Convenience exports
+export const getUser = () => useUserStore.getState().user;
+export const getToken = () => useUserStore.getState().token;
 
-function reducer(state, action) {
-  switch (action.type) {
-    case 'SET_FULLBOX_ON':
-      return { ...state, fullBox: true };
-    case 'SET_FULLBOX_OFF':
-      return { ...state, fullBox: false };
-    case 'SET_USER_TRIP':
-        return {
-          ...state,
-          cart: {
-            ...state.cart,
-            userTrip: action.payload
-          }
-      };
-    case 'CART_ADD_ACCESSORY':
-      // add to cart
-      const newAccessory = action.payload;
-      const existAccessory = state.cart.cartItems.find(
-        (item) => item._id === newAccessory._id
-      );
-      const cartAccessories = existAccessory
-        ? state.cart.cartItems.map((item) =>
-            item._id === existItem._id ? newItem : item
-          )
-        : [...state.cart.cartItems, newAccessory];
-      localStorage.setItem('cartAccessories', JSON.stringify(cartAccessories));
-      return { ...state, cart: { ...state.cart, cartAccessories } };
 
-    case 'CART_ADD_ITEM':
-      // add to cart
-      const newItem = action.payload;
-      const existItem = state.cart.cartItems.find(
-        (item) => item._id === newItem._id
-      );
-      const cartItems = existItem
-        ? state.cart.cartItems.map((item) =>
-            item._id === existItem._id ? newItem : item
-          )
-        : [...state.cart.cartItems, newItem];
-      localStorage.setItem('cartItems', JSON.stringify(cartItems));
-    return { ...state, cart: { ...state.cart, cartItems } };
+//// Cart Convenience exports
+export const getCartItems = () => useCartStore.getState().items;
+export const getCartTotal = () => useCartStore.getState().totalPrice;
 
-        
-    case 'CART_REMOVE_ITEM': {
-      const cartItems = state.cart.cartItems.filter(
-        (item) => item._id !== action.payload._id
-      );
-      localStorage.setItem('cartItems', JSON.stringify(cartItems));
-      return { ...state, cart: { ...state.cart, cartItems } };
-    }
-    case 'CART_CLEAR':
-      return { ...state, cart: { ...state.cart, cartItems: [], userTrip: {}} };
 
-    case 'USER_SIGNIN':
-      return { ...state, userInfo: action.payload };
-    case 'USER_SIGNOUT':
-      return {
-        ...state,
-        userInfo: null,
-        cart: {
-          cartItems: [],
-          shippingAddress: {},
-          paymentMethod: '',
-          timeslot: {}
-        },
-      };
-    case 'SAVE_SHIPPING_ADDRESS':
-      return {
-        ...state,
-        cart: {
-          ...state.cart,
-          shippingAddress: action.payload,
-        },
-      };
-    case 'SAVE_SHIPPING_ADDRESS_MAP_LOCATION':
-      return {
-        ...state,
-        cart: {
-          ...state.cart,
-          shippingAddress: {
-            ...state.cart.shippingAddress,
-            location: action.payload,
-          },
-        },
-      };
-
-    case 'SAVE_PAYMENT_METHOD':
-      return {
-        ...state,
-        cart: { ...state.cart, paymentMethod: action.payload },
-      };
-      case 'ADD_TIME_SLOT':
-        return {
-          ...state,
-          cart: { ...state.cart, timeSlot: action.payload}
-      }
-      case 'ADD_DELIVERY_DATE':
-        return {
-          ...state,
-          cart: { ...state.cart, deliveryDate: action.payload}
-      }
-    default:
-      return state;
-  }
-}
-
-export function StoreProvider(props) {
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const value = { state, dispatch };
-  return <Store.Provider value={value}>{props.children} </Store.Provider>;
-}
+// Order Details convinience exports
+export const saveOrderDetails = (data) => useOrderDetails.getState().saveDetails(data);
+export const clearOrderDetails = () => useOrderDetails.getState().deleteDetails();

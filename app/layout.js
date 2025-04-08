@@ -3,8 +3,10 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import 'mdb-react-ui-kit/dist/css/mdb.min.css'
 import "@fortawesome/fontawesome-free/css/all.min.css"
+import { ToastContainer } from "react-toastify";
 import "./globals.css";
 import Header from "./components/Header";
+import { StoreProvider } from "@/Store";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,12 +25,15 @@ const geistMono = Geist_Mono({
  */
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+      <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
       <header style={{height: 100}}>
       <Header/>
       </header>
-          <main className="flex-grow">{children}</main>
+          <main className="flex-grow mt-3">
+            {children}
+            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick={false} rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="light"/>
+          </main>
         <footer className="position-relative bottom-0 align-content-center">
           &copy; 2025
         </footer>

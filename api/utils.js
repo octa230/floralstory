@@ -1,4 +1,5 @@
 import {v4 as uuidv4 }from 'uuid'
+import nodemailer from 'nodemailer'
 
 //procuct sku
 export const generateUUid = async()=>{
@@ -6,6 +7,19 @@ export const generateUUid = async()=>{
 }
 
 
+// Nodemailer transporter setup
+export const transporterConfig = ()=> nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: 'systemsfloral@gmail.com',
+    pass: 'txww jnvj bxhe suvn'
+  },
+   tls: {
+    rejectUnauthorized: true
+  } 
+})
 //slug cleaner
 export const stringCleaner =(str)=> {
     return str

@@ -1,13 +1,19 @@
 'use client'
-import React, { useState } from 'react'
-import { MDBBtn, MDBSelect } from 'mdb-react-ui-kit'
+
+
+import React, { useContext, useState } from 'react'
+import { MDBBtn } from 'mdb-react-ui-kit'
 import { regions } from '../utils'
+import { useOrderDetails } from '@/Store'
 
 const TimeSlotSelector = () => {
   const [selectedRegion, setSelectedRegion] = useState(null)
   const [selectedSlot, setSelectedSlot] = useState(null)
   const [selectedDate, setSelectedDate] = useState(null)
   const [currentStep, setCurrentStep] = useState(1) // 1: Region, 2: Slot, 3: Date
+
+
+  const {saveDetails } = useOrderDetails()
 
   // Region selection handler
   const handleRegionSelect = (region) => {
@@ -33,12 +39,25 @@ const TimeSlotSelector = () => {
     setCurrentStep(prev => prev - 1)
   }
 
+  const handleSaveDetails=()=>{
+    if(window.confirm('SAVE?')){
+      saveDetails({
+        date: selectedDate,
+        city: selectedRegion.name,
+        slot: selectedSlot
+      })
+    }else{
+      toast
+    }
+    
+  }
+
   return (
       <div className="card shadow-3">
-        <div className="card-header bg-white">
+{/*         <div className="card-header bg-white">
           <h4 className="mb-0">{selectedRegion?.name || 'Select Delivery Time'}</h4>
         </div>
-        
+         */}
         <div className='p-2'>
           {/* Step 1: Region Selection */}
           {currentStep === 1 && (
@@ -132,8 +151,9 @@ const TimeSlotSelector = () => {
 
         <div className="card-footer bg-white text-end">
           {currentStep === 3 && selectedDate && (
-            <MDBBtn color="dark" className="px-4">
-              Confirm Delivery
+            <MDBBtn color="dark" className="px-4" onClick={handleSaveDetails}
+              onProgress={handleSaveDetails}>
+              Confirm Details
             </MDBBtn>
           )}
           {currentStep === 3 && !selectedDate && (
