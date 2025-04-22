@@ -30,9 +30,6 @@ const ProductCard = ({ product }) => {
           <MDBCol md='8'>
             <MDBCardBody>
               <MDBCardTitle className='fw-bold'>{product.name}</MDBCardTitle>
-              <MDBCardText className='text-muted mb-2 text-truncate' style={{ maxHeight: '3.6em' }}>
-                {product.description}
-              </MDBCardText>
               
               <div className='d-flex justify-content-between align-items-center'>
                 <div>

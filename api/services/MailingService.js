@@ -1,7 +1,9 @@
 import nodemailer from 'nodemailer'
 import dotenv from 'dotenv'
 import fs from 'fs'
+import { fileURLToPath } from 'url';
 import path from 'path'
+import { dirname } from 'path';
 import handlebars from 'handlebars'
 
 dotenv.config()
@@ -10,6 +12,10 @@ console.log('Email From:', process.env.EMAIL_FROM);
 console.log('Email Host:', process.env.EMAIL_HOST);
 console.log('Email Port:', process.env.EMAIL_PORT);
 console.log('Email User:', process.env.EMAIL_USER);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 
 
 // Nodemailer transporter setup
@@ -112,39 +118,41 @@ class MailingService {
    */
   static async sendNewOrderEmail(email, orderDetails) {
     try {
-      const templateVars = {
-        customerName: orderDetails.customerName || 'Valued Customer',
-        orderId: orderDetails.orderId,
-        orderDate: new Date(orderDetails.orderDate).toLocaleDateString(),
-        items: orderDetails.items || [],
-        shippingAddress: orderDetails.shippingAddress,
-        total: orderDetails.total.toFixed(2),
-        estimatedDelivery: orderDetails.estimatedDelivery,
-        trackingLink: orderDetails.trackingLink || '#',
-        companyName: process.env.COMPANY_NAME || 'Our Company',
-        supportEmail: process.env.SUPPORT_EMAIL || 'support@company.com',
-        year: new Date().getFullYear()
+      console.log("[Email-1] Received order details:", orderDetails);
+      
+      const plainOrder = orderDetails.toObject ? orderDetails.toObject() : {...orderDetails};
+      console.log("[Email-2] Plain order object:", plainOrder);
+  
+      const templateData = {
+        ...plainOrder,
+        orderId: plainOrder._id || 'Unknown',
+        orderDate: new Date().toLocaleDateString()
       };
-      
-      const htmlContent = await this.compileEmailTemplate('newOrder', templateVars);
-      
+      console.log("[Email-3] Template data:", templateData);
+  
+      const htmlContent = await this.compileEmailTemplate('new-order', templateData);
+      console.log("[Email-4] HTML content length:", htmlContent.length);
+  
       const mailOptions = {
         from: `${process.env.COMPANY_NAME} <${process.env.EMAIL_FROM}>`,
-        to: email,
-        subject: `Order Confirmation #${orderDetails.orderId}`,
-        html: htmlContent
+        to: [email, 'tradingfloral@gmail.com'],
+        subject: `Order Confirmation #${plainOrder._id}`,
+        html: htmlContent,
+        // Add text version for debugging
+        text: `Order Confirmation\n\n${JSON.stringify(templateData, null, 2)}`
       };
+  
+      console.log("[Email-5] Mail options:", mailOptions);
       
       const result = await transporter.sendMail(mailOptions);
-      console.log(`New order email sent to ${email}: ${result.messageId}`);
+      console.log("[Email-6] Email sent successfully:", result.messageId);
       
       return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('Error sending new order email:', error);
-      throw new Error(`Failed to send order confirmation email: ${error.message}`);
+      console.error('[Email-ERROR] Error sending email:', error);
+      throw error;
     }
   }
-  
   /**
    * Sends an order cancellation confirmation email
    * @param {string} email - Recipient email
@@ -246,23 +254,19 @@ class MailingService {
    * @param {Object} variables - Template variables
    * @returns {Promise<string>} - Compiled HTML content
    */
-  static async compileEmailTemplate(templateName, variables) {
+  static async compileEmailTemplate(templateName, data) {
     try {
-      const templatePath = path.join(process.env.TEMPLATE_DIR || 'templates/emails', `${templateName}.html`);
-      
-      // Read template file
-      const templateSource = await fs.promises.readFile(templatePath, 'utf8');
-      
-      // Compile template with Handlebars
-      const template = handlebars.compile(templateSource);
-      
-      // Return compiled HTML with variables
-      return template(variables);
+      const templatePath = path.join(__dirname, '..', 'templates', 'emails', `${templateName}.html`);
+      const templateContent = await fs.promises.readFile(templatePath, 'utf8');
+      const handlebarsInstance = handlebars.create({ strict: false });
+      const template = handlebarsInstance.compile(templateContent, {
+        noEscape: true,
+        strict: false
+      });
+      return template(data);
     } catch (error) {
-      console.error(`Error compiling email template ${templateName}:`, error);
-      
-      // Fallback to a basic template if the template file is not found
-      return this.generateBasicTemplate(templateName, variables);
+      console.error('Template compilation failed:', error);
+      throw error;
     }
   }
   
@@ -272,7 +276,7 @@ class MailingService {
    * @param {Object} variables - Template variables
    * @returns {string} - Basic HTML email content
    */
-  static generateBasicTemplate(templateType, variables) {
+/*   static generateBasicTemplate(templateType, variables) {
     const companyName = variables.companyName || process.env.COMPANY_NAME || 'Our Company';
     const year = new Date().getFullYear();
     
@@ -354,7 +358,7 @@ class MailingService {
       </html>
     `;
   }
-  
+   */
   /**
    * Tests the email configuration by sending a test email
    * @param {string} testEmail - Email address to send test to

@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
 import { MDBBtn, MDBInput, MDBRadio } from 'mdb-react-ui-kit';
-import { FaMapMarkerAlt, FaUser, FaPhone, FaEnvelope, FaHome, FaBriefcase, FaStar } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaUser, FaPhone, FaHome, FaBriefcase, FaStar } from 'react-icons/fa';
+import { useCartStore } from '@/Store';
+import { useRouter } from 'next/navigation';
 
-const AddressForm = () => {
+
+
+
+
+
+
+
+
+const AddressForm = ({cartId}) => {
+  
+  const {addAddress, items, fullTotal} = useCartStore()
+
   const [formData, setFormData] = useState({
     title: '',
     firstName: '',
@@ -23,18 +36,21 @@ const AddressForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    addAddress(cartId, {...formData})
+
+
     console.log('Address submitted:', formData);
+    if(items.length > 1) return
+//   router.push('/checkout')
     // Submit logic here
   };
 
   return (
-    <div className="address-form-container p-4" style={{ maxWidth: '600px', margin: '0 auto' }}>
+    <div className="address-form-container" style={{ margin: '0 auto' }}>
       <h3 className="mb-4 d-flex align-items-center">
         <FaMapMarkerAlt className="text-primary me-2" />
         ADD DELIVERY ADDRESS
       </h3>
-
-      <form onSubmit={handleSubmit}>
         {/* Title and Name */}
         <div className="card mb-3 shadow-sm">
           <div className="card-body">
@@ -183,7 +199,7 @@ const AddressForm = () => {
               Address Type
             </h5>
 
-            <div className="d-flex gap-4">
+            <div className="d-flex gap-2">
               <MDBRadio 
                 name="addressType" 
                 id="home" 
@@ -223,10 +239,9 @@ const AddressForm = () => {
           </div>
         </div>
 
-        <MDBBtn type="submit" color="primary" className="w-100 py-2">
+        <MDBBtn onClick={handleSubmit} color="primary" className="w-100 py-2">
           SAVE AND DELIVER HERE
         </MDBBtn>
-      </form>
     </div>
   );
 };

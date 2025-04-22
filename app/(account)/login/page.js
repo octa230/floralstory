@@ -1,9 +1,9 @@
 'use client'
 
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { userStoreActions, useUserStore } from '@/Store'
+import { useCartStore, userStoreActions, useUserStore } from '@/Store'
 
 import {
   MDBContainer,
@@ -15,7 +15,7 @@ import {
   MDBBtn,
   MDBIcon,
 } from 'mdb-react-ui-kit'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import { URL } from '@/app/constants'
@@ -28,9 +28,13 @@ const LoginPage = () => {
   
 
   const login = useUserStore(state=> state.login)
+  const{ user } = useCartStore()
 
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect' || '/')
+
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -42,12 +46,18 @@ const LoginPage = () => {
         email,
         password
       })
-      console.log(data)
+      console.log(data.user)
       // Fix: You were checking response.ok but using axios which doesn't have this
       if (data.success) {
-        login(data.user, data.token)
+        const cleanData ={
+          ...data.user,
+          token: data.token
+        }
+        login(cleanData)
+        console.log(cleanData)
         
-        router.push('/')
+        //router.push('/')
+        router.push(redirect)
       } else {
         throw new Error(data.message || 'Login failed')
       }

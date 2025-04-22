@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 import { URL } from '../../constants'
 import axios from 'axios'
-import { MDBBtn, MDBRange, MDBTooltip, MDBAccordion, MDBAccordionItem, MDBInput } from 'mdb-react-ui-kit'
+import { MDBCardText, MDBBtn, MDBRange, MDBTooltip, MDBAccordion, MDBAccordionItem, MDBInput } from 'mdb-react-ui-kit'
 import TimeSlotSelector from '@/app/components/TimeSlots'
 import { getCartItems, useCartStore, useOrderDetails } from '@/Store'
 import { useRouter } from 'next/navigation'
@@ -100,6 +100,42 @@ const ProductScreen = () => {
     ...product,
     quantity,
     deliveryDate: date,
+    city: city,
+    deliverySlot: slot,
+    accessories: selectedAccessories
+  }); 
+
+    // Add to cart
+    //addItem(cartItem);
+    
+    // Show confirmation before redirecting
+    setShowAccessoriesModal(false);
+    setShowConfirmationModal(true);
+  };
+
+
+  const handleBuyNow = () => {
+    if (!product) return;
+    
+    // First show accessories selection modal if not shown yet
+    if (!showAccessoriesModal && accessories.length > 0) {
+      setShowAccessoriesModal(true);
+      return;
+    }
+    
+    // Prepare the item with selected accessories
+    const selectedAccessories = accessories
+    .filter(acc => accessoryQuantities[acc._id] > 0)
+    .map(acc => ({
+      ...acc,
+      quantity: accessoryQuantities[acc._id]
+    }));
+
+  addItem({
+    ...product,
+    quantity,
+    deliveryDate: date,
+    city: city,
     deliverySlot: slot,
     accessories: selectedAccessories
   }); 
@@ -197,15 +233,11 @@ const ProductScreen = () => {
               <sup className="fs-6">AED</sup> {product.price}
             </p>
             
-            <MDBAccordion initialActive={0} className="mb-4">
+            <MDBAccordion initialActive={1} className="mb-4">
               <MDBAccordionItem collapseId={1} headerTitle="SELECT DETAILS">
                 <TimeSlotSelector />
               </MDBAccordionItem>
             </MDBAccordion>
-            
-            <div className="mb-3">
-              <p className="text-muted">{product.description}</p>
-            </div>
           </div>
         </div>
 
@@ -245,12 +277,13 @@ const ProductScreen = () => {
                 <p className="mb-0">
                   {city} delivery <br/> 
                   On {new Date(date).toDateString()} <br/>
-                  {slot?.key} ({slot?.value})
+                  {slot?.key} ({slot?.time})<br/>
+                  {slot.price}-aed
                 </p>
               </div>
             )}
             
-            <MDBBtn
+          <MDBBtn
                 disabled={!slot || !date || !product.inStock} 
                 onClick={handleAddToCart}
                 color="dark" 
@@ -265,6 +298,7 @@ const ProductScreen = () => {
               color="primary" 
               ripple="true" 
               className="w-100 mb-3 py-2"
+              onClick={handleBuyNow}
             >
               BUY NOW
             </MDBBtn>
@@ -348,6 +382,9 @@ const ProductScreen = () => {
         </div>
       )}
     </div>
+      <MDBCardText className='text-muted mb-2 text-truncate' style={{ maxHeight: '3.6em' }}>
+        {product.description}
+      </MDBCardText>
     </div>
   )
 }

@@ -1,11 +1,19 @@
 import { Router } from 'express'
-import Order from '../models/order.js'
+import asyncHandler from 'express-async-handler'
+import orderService from '../services/OrderService.js'
+import MailingService from '../services/MailingService.js'
 
-const OrderRouter = Router()
+const orderRouter = Router()
+
+orderRouter.post('/', asyncHandler(async(req, res)=>{
+    console.log('body', req.body)
+    const order = await orderService.PlaceOrder(req.body)
+    await MailingService.sendNewOrderEmail(order.user.email, order)
+    res.send(order)
+}))
 
 
 
 
 
-
-export default OrderRouter
+export default orderRouter

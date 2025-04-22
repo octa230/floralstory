@@ -26,6 +26,7 @@ const TimeSlotSelector = () => {
   // Time slot selection handler
   const handleSlotSelect = (slot) => {
     setSelectedSlot(slot)
+    console.log(slot)
     setCurrentStep(3)
   }
 
@@ -41,6 +42,7 @@ const TimeSlotSelector = () => {
 
   const handleSaveDetails=()=>{
     if(window.confirm('SAVE?')){
+      console.log(selectedSlot)
       saveDetails({
         date: selectedDate,
         city: selectedRegion.name,
@@ -96,7 +98,7 @@ const TimeSlotSelector = () => {
                       <button
                         className={`btn w-100 py-3 ${selectedSlot?.key === key ? 
                           'btn-primary' : 'btn-outline-primary'}`}
-                        onClick={() => handleSlotSelect({ key, value, price: slot.price })}
+                        onClick={() => handleSlotSelect({ key, time: value, price: slot.price })}
                       >
                         <div className="d-flex justify-content-between">
                           <span>{key}: {value}</span>
@@ -123,7 +125,7 @@ const TimeSlotSelector = () => {
               
               <div className="mb-4">
                 <div className="alert alert-info">
-                  Selected: {selectedRegion.name} - {selectedSlot.key} ({selectedSlot.value})
+                  Selected: {selectedRegion.name} - {selectedSlot.value} aed{selectedSlot.price}
                 </div>
                 <input 
                   type="date" 
@@ -141,9 +143,10 @@ const TimeSlotSelector = () => {
             <div className="mt-4 p-3 bg-light rounded">
               <h5>Summary</h5>
               <p className="mb-0">
-                {selectedRegion?.name} delivery <br/> 
+                {selectedRegion?.name}<br/>{selectedSlot.key} Delivery <br/> 
                 On {selectedDate?.toDateString()} <br/>
-                {selectedSlot?.key} ({selectedSlot?.value})
+                {selectedSlot?.time} <br/>
+                AED: {selectedSlot?.price}
               </p>
             </div>
           )}

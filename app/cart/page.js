@@ -1,18 +1,30 @@
 'use client'
-import React from 'react'
-import { useCartStore } from '@/Store'
+import React, { useEffect, useState } from 'react'
+import { calculateTotalWithAccessories, useCartStore, useUserStore } from '@/Store'
 import { MDBBtn } from 'mdb-react-ui-kit'
-import { useRouter } from 'next/navigation'
+import { redirect, useRouter } from 'next/navigation'
 import { FaShoppingCart, FaTrash, FaPlus, FaMinus, FaArrowLeft } from 'react-icons/fa'
 import AddressForm from '../components/AddressForm'
+import MessageCardModal from '../components/MessageCardModal'
 
 const CartScreen = () => {
   const router = useRouter()
-  const { items, totalPrice, removeItem, updateItemQuantity } = useCartStore()
+  const { items, hasHydrated, removeItem, updateItemQuantity } = useCartStore()
+  const { deliveryFees, total, accessoriesTotal, fullTotal } = calculateTotalWithAccessories(items)
+  const [isVisible, setIsVisible] = useState(false)
+  const {user} = useUserStore()
 
   const handleUpdateQuantity = (itemId, change) => {
     updateItemQuantity(itemId, change)
   }
+
+  useEffect(()=>{
+    if(!hasHydrated) return
+    const currentPath = window.location.pathname
+    if(!user?.token || !user){
+      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
+    }
+  },[user, hasHydrated])
 
   return (
     <div className="container py-4">
@@ -32,15 +44,15 @@ const CartScreen = () => {
         <div className="col-lg-8 mb-4">
           {items.length === 0 ? (
             <div className="text-center py-5">
-              <img 
-                src="/empty-cart.svg" 
-                alt="Empty cart" 
+              <img
+                src="/empty-cart.svg"
+                alt="Empty cart"
                 style={{ width: '200px', opacity: 0.7 }}
                 className="mb-4"
               />
               <h4 className="text-muted">Your cart is empty</h4>
-              <MDBBtn 
-                color="primary" 
+              <MDBBtn
+                color="primary"
                 className="mt-3 px-4"
                 onClick={() => router.push('/')}
               >
@@ -54,7 +66,7 @@ const CartScreen = () => {
                   <FaShoppingCart className="me-2 text-muted" />
                   Items Summary
                 </h4>
-                
+
                 {items.map((item) => (
                   <div
                     key={item.cartId}
@@ -62,14 +74,28 @@ const CartScreen = () => {
                   >
                     {/* Delivery Info */}
                     {item.deliveryDate && item.deliverySlot && (
-                      <div className="alert alert-primary p-2 mb-3">
+                      <div className="alert alert-primary p-2 mb-3 d-flex flex-column text-uppercase">
                         <small className="d-block">
-                          <strong>Delivery:</strong> {new Date(item.deliveryDate).toDateString()}
+                          <strong>{item.city} Delivery:</strong> {new Date(item.deliveryDate).toDateString()}
                         </small>
-                        <small>{item.deliverySlot.key}</small>
+                        <small>
+                          <strong>{item.deliverySlot.key}:</strong> {item.deliverySlot.time}
+                        </small>
+                        <small>
+                          AED:{item.deliverySlot.price}
+                        </small>
                       </div>
                     )}
 
+                    <div className="alert alert-primary p-2 mb-3 d-flex flex-column text-uppercase">
+                      <MDBBtn
+                        color="alert"
+                        className="w-100 py-2"
+                        onClick={()=> setIsVisible(true)}
+                      >
+                        SEND MESSAGE CARD
+                      </MDBBtn>
+                    </div>
                     {/* Item Row */}
                     <div className="d-flex flex-column flex-md-row gap-3">
                       {/* Product Image */}
@@ -77,8 +103,8 @@ const CartScreen = () => {
                         src={item.image}
                         alt={item.name}
                         className="rounded shadow-sm"
-                        style={{ 
-                          width: '100px', 
+                        style={{
+                          width: '100px',
                           height: '100px',
                           objectFit: 'cover',
                           alignSelf: 'flex-start'
@@ -89,15 +115,15 @@ const CartScreen = () => {
                       <div className="flex-grow-1">
                         <div className="d-flex justify-content-between">
                           <h6 className="mb-1">{item.name}</h6>
-                          <p className="mb-1 fw-bold">AED {item.price.toFixed(2)}</p>
+                          <p className="mb-1 fw-bold">AED {item.price?.toFixed(2)}</p>
                         </div>
 
                         {/* Quantity Controls */}
                         <div className="d-flex align-items-center justify-content-between mt-2">
                           <div className="d-flex align-items-center border rounded">
-                            <MDBBtn 
-                              size="sm" 
-                              color="light" 
+                            <MDBBtn
+                              size="sm"
+                              color="light"
                               className="px-3 py-1"
                               onClick={() => handleUpdateQuantity(item.cartId, -1)}
                               disabled={item.quantity <= 1}
@@ -105,18 +131,18 @@ const CartScreen = () => {
                               <FaMinus />
                             </MDBBtn>
                             <span className="px-3">{item.quantity}</span>
-                            <MDBBtn 
-                              size="sm" 
-                              color="light" 
+                            <MDBBtn
+                              size="sm"
+                              color="light"
                               className="px-3 py-1"
                               onClick={() => handleUpdateQuantity(item.cartId, 1)}
                             >
                               <FaPlus />
                             </MDBBtn>
                           </div>
-                          <MDBBtn 
-                            size="sm" 
-                            color="danger" 
+                          <MDBBtn
+                            size="sm"
+                            color="danger"
                             className="px-3"
                             onClick={() => removeItem(item.cartId)}
                           >
@@ -140,8 +166,13 @@ const CartScreen = () => {
 
                     {/* Address Form */}
                     <div className="mt-3">
-                      <AddressForm />
+                      <AddressForm cartId={item.cartId}/>
                     </div>
+                    <MessageCardModal 
+                    isVisible={isVisible} 
+                    onClose={()=> setIsVisible(false)}
+                    cartId={item.cartId}
+                    />
                   </div>
                 ))}
               </div>
@@ -154,34 +185,38 @@ const CartScreen = () => {
           <div className="card shadow-sm border-0 sticky-top" style={{ top: '20px' }}>
             <div className="card-body">
               <h4 className="mb-3">Order Summary</h4>
-              
+
               <div className="mb-3">
                 <div className="d-flex justify-content-between mb-2">
                   <span className="text-muted">Subtotal</span>
-                  <span>AED {totalPrice.toFixed(2)}</span>
+                  <span>AED {total.toFixed(2)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                   <span className="text-muted">Shipping</span>
-                  <span className="text-success">FREE</span>
+                  <span className="text-success">{deliveryFees.toFixed(2)}</span>
+                </div>
+                <div className="d-flex justify-content-between mb-2">
+                  <span className="text-muted">Additional(s)</span>
+                  <span className="text-success">{accessoriesTotal.toFixed(2)}</span>
                 </div>
                 <hr />
                 <div className="d-flex justify-content-between fw-bold fs-5">
                   <span>Total</span>
-                  <span>AED {totalPrice.toFixed(2)}</span>
+                  <span>AED {fullTotal.toFixed(2)}</span>
                 </div>
               </div>
 
               {items.length > 0 && (
                 <>
-                  <MDBBtn 
-                    color="dark" 
+                  <MDBBtn
+                    color="dark"
                     className="w-100 py-2 mb-2"
                     onClick={() => router.push('/checkout')}
                   >
                     Proceed to Checkout
                   </MDBBtn>
-                  <MDBBtn 
-                    color="light" 
+                  <MDBBtn
+                    color="light"
                     className="w-100 py-2"
                     onClick={() => router.push('/')}
                   >

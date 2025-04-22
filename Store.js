@@ -5,27 +5,25 @@ export const useUserStore = create(
   persist(
     (set) => ({
       user: null,
-      token: null,
+      asHydrated: false,
       isAuthenticated: false,
-      
+
       // Actions
-      login: (userData, authToken) => set({ 
-        user: userData, 
-        token: authToken,
-        isAuthenticated: true
+      login: (userData) => set({
+        user: userData,
+        isAuthenticated: true,
       }),
       logout: () => set({ 
-        user: null, 
-        token: null,
+        user: null,
         isAuthenticated: false 
       }),
-      updateUser: (userData) => set({ user: userData })
+      updateUser: (userData) => set({user: userData}),
     }),
     {
       name: 'user-storage',
       partialize: (state) => ({
         user: state.user,
-        token: state.token
+        //token: state.token
       })
     }
   )
@@ -67,19 +65,23 @@ export const useCartStore = create(
     (set, get) => ({
       items: [],
       totalPrice: 0,
-
+      
+      // Add an item to the cart
       addItem: (item) => set(state => {
         // Generate a unique cartId for each item added
         const cartId = Date.now().toString();
         const itemWithCartId = { ...item, cartId };
         
+        // Create updated array with new item
+        const updatedItems = [...state.items, itemWithCartId];
+        
         return {
-          items: [...state.items, itemWithCartId],
-          totalPrice: calculateTotalWithAccessories([...state.items, itemWithCartId])
+          items: updatedItems,
+          totalPrice: calculateTotalWithAccessories(updatedItems),
         };
       }),
       
-      // Actions
+      // Update item quantity
       updateItemQuantity: (cartId, change) => set(state => {
         const updatedItems = state.items.map(item => {
           if (item.cartId === cartId) {
@@ -94,24 +96,24 @@ export const useCartStore = create(
           totalPrice: calculateTotalWithAccessories(updatedItems)
         };
       }),
-
+      
+      // Remove an item from cart
       removeItem: (cartId) => set(state => {
         const updatedItems = state.items.filter(i => i.cartId !== cartId);
+        
         return {
           items: updatedItems,
           totalPrice: calculateTotalWithAccessories(updatedItems)
         };
       }),
       
+      // Add accessory to an item
       addAccessoryToItem: (itemId, accessory) => set(state => {
         const updatedItems = state.items.map(item => {
           if (item._id === itemId) {
             return {
               ...item,
-              accessories: [
-                ...(item.accessories || []),
-                accessory
-              ]
+              accessories: [...(item.accessories || []), accessory]
             };
           }
           return item;
@@ -123,14 +125,13 @@ export const useCartStore = create(
         };
       }),
       
+      // Remove accessory from an item
       removeAccessoryFromItem: (itemId, accessoryId) => set(state => {
         const updatedItems = state.items.map(item => {
           if (item._id === itemId) {
             return {
               ...item,
-              accessories: (item.accessories || []).filter(
-                acc => acc._id !== accessoryId
-              )
+              accessories: (item.accessories || []).filter(acc => acc._id !== accessoryId)
             };
           }
           return item;
@@ -142,8 +143,55 @@ export const useCartStore = create(
         };
       }),
       
+      // Add message card to an item
+      addCard: (itemId, message) => set(state => {
+        const updatedItems = state.items.map(item => {
+          if (item.cartId === itemId) {
+            return { ...item, message };
+          }
+          return item;
+        });
+        
+        return {
+          items: updatedItems,
+          totalPrice: calculateTotalWithAccessories(updatedItems)
+        };
+      }),
+      
+      // Add address to an item
+      addAddress: (itemId, address) => set(state => {
+        console.log('Adding address:', address, 'for item:', itemId);
+        const updatedItems = state.items.map(item => {
+          if (item.cartId === itemId) {
+            return { ...item, address };
+          }
+          return item;
+        });
+        
+        return {
+          items: updatedItems,
+          totalPrice: calculateTotalWithAccessories(updatedItems)
+        };
+      }),
+      
+      // Get order data in format ready for MongoDB
+      getOrderData: (user) => {
+        const state = get();
+        const { deliveryFees, total, accessoriesTotal, fullTotal } = calculateTotalWithAccessories(state.items);
+        
+        return {
+          user,
+          items: state.items, // An array, ready for MongoDB
+          deliveryFees,
+          total,
+          accessoriesTotal,
+          fullTotal,
+          isPaid: false
+        };
+      },
+      
+      // Clear the cart
       clearCart: () => set({ items: [], totalPrice: 0 })
-      // ... other existing actions (removeItem, clearCart)
     }),
     {
       name: 'cart-storage',
@@ -152,17 +200,28 @@ export const useCartStore = create(
   )
 );
 
+
 // Updated calculation to include accessories
-const calculateTotalWithAccessories = (items) => {
-  return items.reduce((total, item) => {
+export const calculateTotalWithAccessories = (items) => {
+  return items.reduce((acc, item) => {
     const itemTotal = item.price * (item.quantity || 1);
+    acc.total += itemTotal;
+
+    if (item.deliverySlot && item.deliverySlot.price) {
+      acc.deliveryFees += item.deliverySlot.price;
+    }
+
     const accessoriesTotal = (item.accessories || []).reduce(
-      (accTotal, accessory) => accTotal + (accessory.price * (accessory.quantity || 1)),
+      (accessoryAcc, accessory) => accessoryAcc + (accessory.price * (accessory.quantity || 1)),
       0
     );
-    return total + itemTotal + accessoriesTotal;
-  }, 0);
+    
+    acc.accessoriesTotal += accessoriesTotal;
+    acc.fullTotal = acc.total + acc.deliveryFees + acc.accessoriesTotal;
+    return acc;
+  }, { total: 0, deliveryFees: 0, accessoriesTotal: 0, fullTotal: 0 });
 };
+
 
 
 
@@ -174,6 +233,7 @@ export const getToken = () => useUserStore.getState().token;
 //// Cart Convenience exports
 export const getCartItems = () => useCartStore.getState().items;
 export const getCartTotal = () => useCartStore.getState().totalPrice;
+
 
 
 // Order Details convinience exports

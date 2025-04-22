@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer'; // You'll need to install this dependency
 import { transporterConfig } from "../utils.js";
 
+
 class AuthService {
     static async SignUpUser(userData) {
         try {
