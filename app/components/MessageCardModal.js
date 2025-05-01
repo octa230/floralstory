@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { FaEnvelope} from 'react-icons/fa';
 import { MDBBtn, MDBInput, MDBRadio } from 'mdb-react-ui-kit';
-import { useCartStore } from '@/Store';
+import { useCartStore } from '../../Store';
 
 
 const MessageCardModal = ({ isVisible, cartId, onClose }) => {

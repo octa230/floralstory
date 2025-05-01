@@ -1,10 +1,6 @@
 export type ProductProps={
-  _id: string, 
-  name: string,
-  image: string,
-  images: string[],
-  price: number,
-} & Record<string, any>
+
+}
 
 export type OrderProps={
 
@@ -36,7 +32,7 @@ export type CategoryAttributes = {
     validUntil?: Date | string;
     createdAt?: Date | string;
     updatedAt?: Date | string;
-  } & Record<string, unknown>
+  }
   
   export type CategoryRelationship = {
     _id: string;
@@ -90,5 +86,3 @@ export type CategoryAttributes = {
     parentId?: string | null;
     highlight?: boolean;
   }
-
- 

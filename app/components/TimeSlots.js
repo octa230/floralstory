@@ -4,7 +4,7 @@
 import React, { useContext, useState } from 'react'
 import { MDBBtn } from 'mdb-react-ui-kit'
 import { regions } from '../utils'
-import { useOrderDetails } from '@/Store'
+import { useOrderDetails } from '../../Store'
 
 const TimeSlotSelector = () => {
   const [selectedRegion, setSelectedRegion] = useState(null)
@@ -55,12 +55,12 @@ const TimeSlotSelector = () => {
   }
 
   return (
-      <div className="card shadow-3">
+      <div className="card shadow-0">
 {/*         <div className="card-header bg-white">
           <h4 className="mb-0">{selectedRegion?.name || 'Select Delivery Time'}</h4>
         </div>
          */}
-        <div className='p-2'>
+        <div>
           {/* Step 1: Region Selection */}
           {currentStep === 1 && (
             <div className="region-selection">
@@ -69,7 +69,7 @@ const TimeSlotSelector = () => {
                 {regions.map((region, index) => (
                   <div key={index} className="col-md-6">
                     <button
-                      className="btn btn-outline-primary w-100 py-3"
+                      className="btn btn-outline-secondary w-100 py-3"
                       onClick={() => handleRegionSelect(region)}
                     >
                       {region.name}
@@ -97,7 +97,7 @@ const TimeSlotSelector = () => {
                     <div key={i} className="col-md-12">
                       <button
                         className={`btn w-100 py-3 ${selectedSlot?.key === key ? 
-                          'btn-primary' : 'btn-outline-primary'}`}
+                          'btn-primary' : 'btn-outline-info'}`}
                         onClick={() => handleSlotSelect({ key, time: value, price: slot.price })}
                       >
                         <div className="d-flex justify-content-between">
@@ -154,7 +154,7 @@ const TimeSlotSelector = () => {
 
         <div className="card-footer bg-white text-end">
           {currentStep === 3 && selectedDate && (
-            <MDBBtn color="dark" className="px-4" onClick={handleSaveDetails}
+            <MDBBtn color="dark" className="px-4 shadow-0" onClick={handleSaveDetails}
               onProgress={handleSaveDetails}>
               Confirm Details
             </MDBBtn>

@@ -6,7 +6,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { URL } from '../constants';
-import { useUserStore, useCartStore, calculateTotalWithAccessories } from '@/Store';
+import { useUserStore, useCartStore, calculateTotalWithAccessories } from '../../Store';
 
 // Make sure to load Stripe only once and asynchronously
 const stripePromise = loadStripe('pk_test_51RA5EaPOwmNAjOPnjmMO2GdEwHEhajdLCmIU3rqcw4l8pypRuOugdAZZ7G2361mXHi2dSR5SMgJufcTavtzjUdSU001O59fgmq'); // Replace with your actual publishable key

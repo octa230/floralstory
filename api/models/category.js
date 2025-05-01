@@ -6,6 +6,7 @@ const categorySchema = new mongoose.Schema({
     slug: { type: String, required: true, unique: true }, // "easter-flowers"
     canonicalName: { type: String, required: true }, // "Easter Flowers"    
     type: String, 
+    image: String,
 
     // Taxonomy Positioning
     axis:{
@@ -19,7 +20,7 @@ const categorySchema = new mongoose.Schema({
 
     // Temporal Control
     validFrom: Date,
-    valitUntil: Date
+    validUntil: Date
 },
 {
     timestamps: true
@@ -35,7 +36,7 @@ const categoryRelationSchema = new mongoose.Schema({
     },
     relationshipType: {
         type: String,
-        enum: ['hiracal', 'cross-link', 'combo']
+        enum: ['hierarchical', 'cross-link', 'combo']
     },
     sortOrder: Number
 })
@@ -64,7 +65,7 @@ const navItemSchema = new mongoose.Schema({
     },
     
     // Display properties
-    icon: String,
+    image: String,
     label: String,
     highlight: { type: Boolean, default: false },
     
@@ -76,39 +77,12 @@ const navItemSchema = new mongoose.Schema({
     sortOrder: { type: Number, default: 0 }
 });
 
-/* const navItemSchema = new mongoose.Schema({
-    // Reference to either category or external link
-    
-    target:{
-        type: String,
-        enum: ['category', 'external-url', 'search-query'],
-        required: true
-    },
-    categoryId: {type: mongoose.Types.ObjectId, ref: 'Category'},
-
-    //display properties
-    url: String,
-    query: String,
-    
-
-    //display properties
-    icon: String,
-    label: String,
-    highlight: {type: Boolean, default: false},
-    
-    //Nesting
-    parentNavigationItem: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'NavigationItem' 
-      },
-    sortOrder: {type: Number, default: 0}
-}) */
-const CategoryRelationship = mongoose.model('CategoryRelations', categoryRelationSchema)
+const CategoryRelations = mongoose.model('CategoryRelations', categoryRelationSchema)
 const NavigationItem = mongoose.model('NavigationItem', navItemSchema)
 const Category = mongoose.model('Category', categorySchema)
 
 export {
     Category, 
-    CategoryRelationship, 
+    CategoryRelations, 
     NavigationItem
  }

@@ -1,0 +1,128 @@
+.navigationContainer {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    //overflow-x: "scroll";
+    position: fixed-top;
+    color: rgba(207, 204, 204, 0.83);
+    background: black;
+  }
+  .subcategoryContainer{
+    padding: 8
+  }
+
+  .topNavigation {
+    display: flex;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    overflow-x: auto;
+    white-space: nowrap
+  }
+  .topNavigation button{
+    flex-shrink: 0;
+  }
+  .axis-group {
+    margin-right: 2rem;
+  }
+  
+  .axis-group h4 {
+    text-transform: capitalize;
+    margin-bottom: 0.5rem;
+    color: #666;
+  }
+  
+  .axisItems {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .bottomNavigation {
+    display: flex;
+    padding: 0.75rem 0.5rem;
+    overflow-x: auto;
+    transform: translateY(0);
+    animation: slide-up 0.4s ease-out;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.03);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+  
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .axisItems {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.25rem;
+  }
+  
+  .subcategory {
+    padding: 0.5rem 1rem;
+    border-radius: 9px;
+    background: rgba(240, 240, 240, 0.5);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    color: #555;
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  }
+  
+  .subcategory:hover {
+    background: rgba(235, 235, 235, 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    color: #333;
+  }
+  
+  .subcategory:active {
+    transform: translateY(0px);
+    background: rgba(230, 230, 230, 1);
+  }
+  
+  .animatedItem {
+    animation: fade-in-scale 0.35s ease-out forwards;
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  
+  @keyframes fade-in-scale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+
+  /* Optional: Add active state styles */
+  .subcategory.active {
+    background: rgba(225, 225, 225, 0.9);
+    font-weight: 600;
+    color: #222;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  .highlight-badge {
+    background: #ff4757;
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 10px;
+    margin-left: 0.5rem;
+  }
+

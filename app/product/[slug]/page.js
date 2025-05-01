@@ -5,10 +5,10 @@ import React, { useEffect, useState } from 'react'
 import { URL } from '../../constants'
 import axios from 'axios'
 import { MDBCardText, MDBBtn, MDBRange, MDBTooltip, MDBAccordion, MDBAccordionItem, MDBInput } from 'mdb-react-ui-kit'
-import TimeSlotSelector from '@/app/components/TimeSlots'
-import { getCartItems, useCartStore, useOrderDetails } from '@/Store'
+import TimeSlotSelector from '../../components/TimeSlots'
+import { getCartItems, useCartStore, useOrderDetails } from '../../../Store'
 import { useRouter } from 'next/navigation'
-import Accessory from '@/app/components/Accessory'
+import Accessory from '../../components/Accessory'
 
 const ProductScreen = () => {
   const { slug } = useParams()
@@ -80,7 +80,7 @@ const ProductScreen = () => {
 
 
   const handleAddToCart = () => {
-    if (!product) return;
+    if (!product || product.inStock <= 0) return;
     
     // First show accessories selection modal if not shown yet
     if (!showAccessoriesModal && accessories.length > 0) {
@@ -245,30 +245,11 @@ const ProductScreen = () => {
         {/* Action Column */}
         <div className="col-lg-3 col-md-12 mt-md-0 mt-3">
           <div className="card p-3 shadow-2-strong sticky-top" style={{ top: '20px' }}>
-            <div className="quantity-selector">
-              <div className="d-flex align-items-center gap-3 mb-3">
-                <MDBRange
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  min="1"
-                  max={product.inStock}
-                  id="quantityRange"
-                  className="flex-grow-1"
-                />
-                <MDBInput
-                  type="number"
-                  value={quantity}
-                  onChange={handleInputChange}
-                  min="1"
-                  max={product.inStock}
-                  //style={{ width: '70px' }}
-                  className="text-center"
-                />
-              </div>
-              <div className="d-flex justify-content-between">
-                <small>1</small>
-                <small>{product.inStock}</small>
-              </div>
+            <div className="quantity-selector mb-2">
+              <MDBBtn color={product.inStock ? 'success' : "danger"} ripple="true" className="w-100 shadow-0">
+                <i className="fas fa-circle-info me-2"></i> 
+                {product.inStock ? 'AVAILABLE' : "OUT OF STOCK"}
+              </MDBBtn>
             </div>
             
             {date && (
@@ -284,12 +265,12 @@ const ProductScreen = () => {
             )}
             
           <MDBBtn
-                disabled={!slot || !date || !product.inStock} 
+              disabled={!slot || !date || !product.inStock} 
                 onClick={handleAddToCart}
                 color="dark" 
                 ripple="true" 
                 rippleColor="light" 
-                className="w-100 mb-2 py-2"
+                className="w-100 mb-2 py-2 shadow-0"
             >
             {showAccessoriesModal ? 'CONFIRM SELECTION' : 'ADD TO BASKET'}
             </MDBBtn>
@@ -297,7 +278,7 @@ const ProductScreen = () => {
               disabled={!slot || !date || !product.inStock}
               color="primary" 
               ripple="true" 
-              className="w-100 mb-3 py-2"
+              className="w-100 mb-3 py-2 shadow-0"
               onClick={handleBuyNow}
             >
               BUY NOW

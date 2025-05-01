@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
   Container,
   Button,
   Card,
@@ -10,23 +10,33 @@ import {
   Badge,
   Stack,
   Alert,
-  Form
+  Form,
+  Spinner
 } from 'react-bootstrap';
 import axios from 'axios'
 import { URL } from '@/constants';
-import { Category, NavigationItem } from '@/types';
+import { Category, CategoryRelationship, NavigationItem } from '@/types';
 
 // Adjust this to match your backend URL
-const API_BASE_URL = 'http://localhost:3000/api'; // Change to your backend URL
+//const API_BASE_URL = 'http://localhost:3000/api'; // Change to your backend URL
 
 const ManageCategories = () => {
   // State
+  const [showRelationshipModal, setShowRelationshipModal] = useState(false);
+  const [relationships, setRelationships] = useState<CategoryRelationship[]>([]);
+  const [relationshipForm, setRelationshipForm] = useState({
+    parentId: '',
+    childId: '',
+    relationshipType: 'hierarchical' as const,
+    sortOrder: 0
+  });
   const [categories, setCategories] = useState<Category[]>([]);
   const [navigation, setNavigation] = useState<NavigationItem[]>([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showNavModal, setShowNavModal] = useState(false);
   const [formData, setFormData] = useState<Omit<Category, '_id' | 'createdAt' | 'updatedAt'>>({
     slug: '',
+    image: '',
     canonicalName: '',
     axis: 'occasion',
     attributes: {},
@@ -42,6 +52,38 @@ const ManageCategories = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingImage, setLoadingImage] = useState(false);
+
+
+  const handleImageUpload = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    try {
+      setLoadingImage(true)
+      const formData = new FormData();
+      formData.append('image', files[0]);
+
+      const {data} = await axios.post<string>(`${URL}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setFormData(prev => ({ ...prev, image: data}));
+      setLoadingImage(false)
+    } catch (error) {
+      console.error('Upload failed:', error);
+    }finally{
+      setLoadingImage(false)
+    }
+  }, []);
+
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleImageUpload(e.target.files);
+    //e.target.value = ''; 
+  };
+
+
+
 
   // Load data
   useEffect(() => {
@@ -55,7 +97,7 @@ const ManageCategories = () => {
         axios.get(`${URL}/categories`),
         axios.get(`${URL}/navigation`)
       ]);
-      
+
       setCategories(categoriesRes.data);
       setNavigation(navigationRes.data);
       setError(null);
@@ -66,12 +108,46 @@ const ManageCategories = () => {
     }
   };
 
+  const fetchRelationships = async (categoryId: string) => {
+    try {
+      const res = await axios.get(`${URL}/categories/${categoryId}/relationships`);
+      setRelationships(res.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message);
+    }
+  };
+
+  const createRelationship = async () => {
+    try {
+      await axios.post(`${URL}/navigation/relationships`, relationshipForm);
+      setShowRelationshipModal(false);
+      if (selectedCategory) {
+        await fetchRelationships(selectedCategory._id);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message);
+    }
+  };
+
+  const deleteRelationship = async (id: string) => {
+    if (confirm('Are you sure you want to delete this relationship?')) {
+      try {
+        await axios.delete(`${URL}/relationships/${id}`);
+        if (selectedCategory) {
+          await fetchRelationships(selectedCategory._id);
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || err.message);
+      }
+    }
+  };
+
   // Category handlers
   const handleSubmitCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (selectedCategory) {
-        await axios.put(`${API_BASE_URL}/categories/${selectedCategory._id}`, formData);
+        await axios.put(`${URL}/categories/${selectedCategory._id}`, formData);
       } else {
         await axios.post(`${URL}/categories`, formData);
       }
@@ -98,7 +174,7 @@ const ManageCategories = () => {
     e.preventDefault();
     try {
       if (!selectedCategory) return;
-      
+
       const payload = {
         targetType: 'category',
         category: selectedCategory._id,
@@ -135,7 +211,7 @@ const ManageCategories = () => {
       {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
 
       <Stack direction="horizontal" className="mb-4 justify-content-between">
-        <Button 
+        <Button
           variant="primary"
           onClick={() => {
             setSelectedCategory(null);
@@ -177,8 +253,8 @@ const ManageCategories = () => {
                       </small>
                     </div>
                     <Stack direction="horizontal" gap={2}>
-                      <Button 
-                        variant="outline-secondary" 
+                      <Button
+                        variant="outline-secondary"
                         size="sm"
                         onClick={() => {
                           setSelectedCategory(category);
@@ -195,15 +271,15 @@ const ManageCategories = () => {
                       >
                         Edit
                       </Button>
-                      <Button 
-                        variant="outline-danger" 
+                      <Button
+                        variant="outline-danger"
                         size="sm"
                         onClick={() => handleDeleteCategory(category._id)}
                       >
                         Delete
                       </Button>
-                      <Button 
-                        variant="outline-primary" 
+                      <Button
+                        variant="outline-primary"
                         size="sm"
                         onClick={() => {
                           setSelectedCategory(category);
@@ -217,6 +293,17 @@ const ManageCategories = () => {
                         }}
                       >
                         Add to Nav
+                      </Button>
+                      <Button
+                        variant="outline-info"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedCategory(category);
+                          fetchRelationships(category._id);
+                          setShowRelationshipModal(true);
+                        }}
+                      >
+                        Relationships
                       </Button>
                     </Stack>
                   </div>
@@ -239,8 +326,8 @@ const ManageCategories = () => {
               <Form.Control
                 type="text"
                 value={formData.slug}
-                onChange={(e) => setFormData({...formData, slug: e.target.value})}
-                //required
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+              //required
               />
             </Form.Group>
 
@@ -248,20 +335,39 @@ const ManageCategories = () => {
               <Form.Label>Display Name</Form.Label>
               <Form.Control
                 type="text"
-                value={formData.canonicalName}
-                onChange={(e) => setFormData({...formData, canonicalName: e.target.value})}
+                value={formData?.canonicalName}
+                onChange={(e) => setFormData({ ...formData, canonicalName: e.target.value })}
                 required
               />
             </Form.Group>
-
+            <Form.Group className="mb-3">
+              <Form.Label>Category Image</Form.Label>
+              <Form.Control
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                //required
+              />
+              {loadingImage ? (
+                <Spinner animation='grow'/>
+              ): formData.image && (
+                <div className="mt-2">
+                  <img
+                    src={formData?.image}
+                    alt="Preview"
+                    style={{ maxHeight: '200px' }}
+                  />
+                </div>
+              )}
+            </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Category Type</Form.Label>
               <Stack direction="horizontal" gap={2} className="flex-wrap">
-                {['occasion', 'product-type', 'season', 'theme'].map((type) => (
+                {['occasion', 'product-type', 'theme', 'demographic', 'season', 'collection'].map((type) => (
                   <Button
                     key={type}
                     variant={formData.axis === type ? 'primary' : 'outline-secondary'}
-                    onClick={() => setFormData({...formData, axis: type as Category['axis']})}
+                    onClick={() => setFormData({ ...formData, axis: type as Category['axis'] })}
                     type="button"
                   >
                     {type}
@@ -276,7 +382,7 @@ const ManageCategories = () => {
                 <Form.Control
                   type="date"
                   value={formData.validFrom}
-                  onChange={(e) => setFormData({...formData, validFrom: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, validFrom: e.target.value })}
                 />
               </Form.Group>
               <Form.Group className="flex-grow-1">
@@ -284,7 +390,7 @@ const ManageCategories = () => {
                 <Form.Control
                   type="date"
                   value={formData.validUntil}
-                  onChange={(e) => setFormData({...formData, validUntil: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
                 />
               </Form.Group>
             </Stack>
@@ -312,7 +418,7 @@ const ManageCategories = () => {
               <Form.Control
                 type="text"
                 value={navFormData.label}
-                onChange={(e) => setNavFormData({...navFormData, label: e.target.value})}
+                onChange={(e) => setNavFormData({ ...navFormData, label: e.target.value })}
                 required
               />
             </Form.Group>
@@ -322,7 +428,7 @@ const ManageCategories = () => {
               <Form.Control
                 type="text"
                 value={navFormData.icon}
-                onChange={(e) => setNavFormData({...navFormData, icon: e.target.value})}
+                onChange={(e) => setNavFormData({ ...navFormData, icon: e.target.value })}
                 placeholder="emoji or icon name"
               />
             </Form.Group>
@@ -331,7 +437,7 @@ const ManageCategories = () => {
               <Form.Label>Parent Menu Item</Form.Label>
               <Form.Select
                 value={navFormData.parentId || ''}
-                onChange={(e) => setNavFormData({...navFormData, parentId: e.target.value || null})}
+                onChange={(e) => setNavFormData({ ...navFormData, parentId: e.target.value || null })}
               >
                 <option value="">(Top Level)</option>
                 {flattenNavigation(navigation).map(item => (
@@ -347,7 +453,7 @@ const ManageCategories = () => {
               <Form.Control
                 type="number"
                 value={navFormData.sortOrder}
-                onChange={(e) => setNavFormData({...navFormData, sortOrder: parseInt(e.target.value) || 0})}
+                onChange={(e) => setNavFormData({ ...navFormData, sortOrder: parseInt(e.target.value) || 0 })}
                 min="0"
               />
             </Form.Group>
@@ -361,6 +467,139 @@ const ManageCategories = () => {
             </Button>
           </Modal.Footer>
         </Form>
+      </Modal>
+      {/* Relationship Management Modal */}
+      <Modal show={showRelationshipModal} onHide={() => setShowRelationshipModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Manage Relationships for {selectedCategory?.canonicalName}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <h5>Existing Relationships</h5>
+          {relationships.length === 0 ? (
+            <Alert variant="info">No relationships found</Alert>
+          ) : (
+            <ListGroup className="mb-4">
+              {relationships.map(rel => (
+                <ListGroup.Item key={rel._id}>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>{rel.relationshipType}</strong>:
+                      {rel.parent._id === selectedCategory?._id ? (
+                        <span> Parent of <strong>{rel.child.canonicalName}</strong></span>
+                      ) : (
+                        <span> Child of <strong>{rel.parent.canonicalName}</strong></span>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => deleteRelationship(rel._id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
+          )}
+
+          <h5>Create New Relationship</h5>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Relationship Type</Form.Label>
+              <Form.Select
+                value={relationshipForm.relationshipType}
+                onChange={(e) => setRelationshipForm({
+                  ...relationshipForm,
+                  relationshipType: e.target.value as any
+                })}
+              >
+                <option value="hierarchical">Hierarchical (Parent-Child)</option>
+                <option value="cross-link">Cross-link (Related)</option>
+                <option value="combo">Combo (Bundled)</option>
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>
+                {relationshipForm.parentId === selectedCategory?._id ?
+                  "Select Child Category" : "Select Parent Category"}
+              </Form.Label>
+              <Form.Select
+                value={relationshipForm.parentId === selectedCategory?._id ?
+                  relationshipForm.childId : relationshipForm.parentId}
+                onChange={(e) => {
+                  if (relationshipForm.parentId === selectedCategory?._id) {
+                    setRelationshipForm({ ...relationshipForm, childId: e.target.value });
+                  } else {
+                    setRelationshipForm({ ...relationshipForm, parentId: e.target.value });
+                  }
+                }}
+              >
+                <option value="">Select a category</option>
+                {categories
+                  .filter(cat => cat._id !== selectedCategory?._id)
+                  .map(cat => (
+                    <option key={cat._id} value={cat._id}>{cat.canonicalName}</option>
+                  ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Direction</Form.Label>
+              <div>
+                <Button
+                  variant={relationshipForm.parentId === selectedCategory?._id ?
+                    "primary" : "outline-secondary"}
+                  onClick={() => setRelationshipForm({
+                    ...relationshipForm,
+                    parentId: selectedCategory?._id,
+                    childId: ''
+                  })}
+                  className="me-2"
+                >
+                  As Parent
+                </Button>
+                <Button
+                  variant={relationshipForm.parentId !== selectedCategory?._id ?
+                    "primary" : "outline-secondary"}
+                  onClick={() => setRelationshipForm({
+                    ...relationshipForm,
+                    parentId: '',
+                    childId: selectedCategory?._id
+                  })}
+                >
+                  As Child
+                </Button>
+              </div>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Sort Order</Form.Label>
+              <Form.Control
+                type="number"
+                value={relationshipForm.sortOrder}
+                onChange={(e) => setRelationshipForm({
+                  ...relationshipForm,
+                  sortOrder: parseInt(e.target.value) || 0
+                })}
+                min="0"
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowRelationshipModal(false)}>
+            Close
+          </Button>
+          <Button
+            variant="primary"
+            onClick={createRelationship}
+            disabled={!relationshipForm.parentId || !relationshipForm.childId}
+          >
+            Create Relationship
+          </Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );

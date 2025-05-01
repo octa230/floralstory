@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { MDBBtn } from 'mdb-react-ui-kit';
-import { useCartStore } from '@/Store';
 
 
 

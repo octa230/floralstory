@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MDBBtn, MDBInput, MDBRadio } from 'mdb-react-ui-kit';
 import { FaMapMarkerAlt, FaUser, FaPhone, FaHome, FaBriefcase, FaStar } from 'react-icons/fa';
-import { useCartStore } from '@/Store';
+import { useCartStore } from '../../Store';
 import { useRouter } from 'next/navigation';
 
 

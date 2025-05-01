@@ -9,6 +9,7 @@ import AuthRouter from './routes/AuthRouter.js'
 import orderRouter from './routes/OrderRouter.js'
 import categoryRouter from './routes/categoryRoutes.js'
 import navigationRouter from './routes/NavigationRoutes.js'
+import uploadRouter from './routes/uploadRouter.js'
 
 
 
@@ -20,6 +21,7 @@ appServer.use(cors())
 
 appServer.use('/v1/products', ProductRouter)
 appServer.use('/v1/categories', categoryRouter)
+appServer.use('/v1/upload', uploadRouter)
 appServer.use('/v1/navigation', navigationRouter)
 appServer.use('/v1/checkout', PaymentRouter)
 appServer.use('/v1/placeOrder', orderRouter)

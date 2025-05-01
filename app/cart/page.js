@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import { calculateTotalWithAccessories, useCartStore, useUserStore } from '@/Store'
+import { calculateTotalWithAccessories, useCartStore, useUserStore } from '../../Store'
 import { MDBBtn } from 'mdb-react-ui-kit'
 import { redirect, useRouter } from 'next/navigation'
 import { FaShoppingCart, FaTrash, FaPlus, FaMinus, FaArrowLeft } from 'react-icons/fa'
@@ -30,7 +30,7 @@ const CartScreen = () => {
     <div className="container py-4">
       {/* Header */}
       <div className="d-flex align-items-center mb-4">
-        <MDBBtn color='light' onClick={() => router.back()} className="me-3">
+        <MDBBtn onClick={() => router.back()} className="me-3 btn-outline-secondary">
           <FaArrowLeft />
         </MDBBtn>
         <h1 className="mb-0">Your Shopping Cart</h1>
@@ -74,9 +74,9 @@ const CartScreen = () => {
                   >
                     {/* Delivery Info */}
                     {item.deliveryDate && item.deliverySlot && (
-                      <div className="alert alert-primary p-2 mb-3 d-flex flex-column text-uppercase">
+                      <div className="alert alert-info p-2 mb-3 d-flex flex-column text-uppercase">
                         <small className="d-block">
-                          <strong>{item.city} Delivery:</strong> {new Date(item.deliveryDate).toDateString()}
+                          <strong>{item.city} Delivery: {new Date(item.deliveryDate).toDateString()}</strong>
                         </small>
                         <small>
                           <strong>{item.deliverySlot.key}:</strong> {item.deliverySlot.time}
@@ -87,10 +87,10 @@ const CartScreen = () => {
                       </div>
                     )}
 
-                    <div className="alert alert-primary p-2 mb-3 d-flex flex-column text-uppercase">
+                    <div className="p-2 mb-3 d-flex flex-column text-uppercase">
                       <MDBBtn
-                        color="alert"
-                        className="w-100 py-2"
+                        
+                        className="w-100 py-2 btn-outline-info"
                         onClick={()=> setIsVisible(true)}
                       >
                         SEND MESSAGE CARD

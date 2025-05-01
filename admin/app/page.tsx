@@ -12,6 +12,9 @@ export default function Home() {
         <Button onClick={()=> router.push('/categories')}>
           Manage Categories
         </Button>
+        <Button onClick={()=> router.push('/products')}>
+          Manage Products
+        </Button>
       </main>
       <footer>
 

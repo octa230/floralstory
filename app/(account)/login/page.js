@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { useCartStore, userStoreActions, useUserStore } from '@/Store'
+import { useCartStore, userStoreActions, useUserStore } from '../../../Store'
 
 import {
   MDBContainer,
@@ -18,8 +18,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
-import { URL } from '@/app/constants'
-
+import { URL } from '../../constants'
 const LoginPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

@@ -1,5 +1,6 @@
-import { Category, CategoryRelationship, NavigationItem } from "../models/category.js";
+import { Category, CategoryRelations, NavigationItem } from "../models/category.js";
 import { stringCleaner } from "../utils.js";
+import Product from "../models/product.js";
 
 
 
@@ -16,6 +17,7 @@ async function createCategory(data) {
         stringCleaner(data.canonicalName)
         : data.name ? (data.name)
         : data.slug,
+        image: data.image,
         canonicalName: data.canonicalName,
         axis: data.axis,
         attributes: data.attributes || {},
@@ -33,30 +35,50 @@ async function getCategories (){
 
 async function getCategoryById(id) {
     const category = await Category.findById(id);
-    if (!category) throw new NotFoundError('Category not found');
+    if (!category) throw new Error('Category not found');
     return category;
 }
 
 async function updateCategory(id, updates) {
-    const category = getCategoryById(id)
-    if (!category) throw new NotFoundError('Category not found');
+    // Ensure this returns a category or null
+    const category = await getCategoryById(id);
+    console.log(id, updates);
+
+    if (!category) throw new Error('Category not found');
 
     // Prevent axis changes that would break relationships
     if (updates.axis && updates.axis !== category.axis) {
-        const hasRelationships = await CategoryRelationship.exists({
+        const hasRelationships = await CategoryRelations.exists({
             $or: [{ parent: id }, { child: id }]
         });
 
+        console.log('Has relationships:', hasRelationships); // Debugging
+
         if (hasRelationships) {
-            throw new InvalidOperationError(
-                'Cannot change axis type for categories with existing relationships'
-            );
+            throw new Error('Cannot change axis type for categories with existing relationships');
         }
     }
 
-    Object.assign(category, updates);
-    return category.save();
+    // Apply updates manually to avoid issues with Object.assign
+    category.slug = await stringCleaner(updates.canonicalName)
+    category.canonicalName = updates.canonicalName || category.canonicalName;
+    category.axis = updates.axis || category.axis;
+    category.attributes = updates.attributes || category.attributes;
+    category.validFrom = updates.validFrom || category.validFrom;
+    category.validUntil = updates.validUntil || category.validUntil;
+
+    // Save the category with updated fields
+    try {
+        await category.save();
+        console.log('Category updated successfully');
+    } catch (error) {
+        console.error('Error saving category:', error);
+        throw error;
+    }
+
+    return category;
 }
+
 
 
 async function deleteCategory(id) {
@@ -65,7 +87,7 @@ async function deleteCategory(id) {
 
     // Check for dependencies
     const [inRelationships, inNavigation] = await Promise.all([
-        CategoryRelationship.exists({ $or: [{ parent: id }, { child: id }] }),
+        CategoryRelations.exists({ $or: [{ parent: id }, { child: id }] }),
         NavigationItem.exists({ 'target.type': 'category', 'target.category': id })
     ]);
 
@@ -88,18 +110,49 @@ async function getNextSortOrder(parentId = null) {
 }
 
 
+async function getCategoryDetails(categoryId) {
+    const category = await Category.findById(categoryId)
+
+    const [products, subcategories, related] = await Promise.all([
+        Product.find({ category: categoryId }).limit(50),
+        CategoryRelations.find({ parent: categoryId })
+          .populate('child'),
+        CategoryRelations.find({ 
+          $or: [
+            { parent: categoryId, relationshipType: 'cross-link' },
+            { child: categoryId, relationshipType: 'cross-link' }
+          ]
+        }).populate('parent child')
+    ]);
+
+    return {
+        category,
+        products,
+        subcategories: subcategories.map(r => r.child),
+        relatedCategories: related.map(r => 
+          r.parent._id.equals(req.params.id) ? r.child : r.parent
+        )
+      };
+}
+
+async function getNavigationDetails(categoryId) {
+    const { ancestors, descendants } = await getCategoryTree(categoryId);
+    console.log("Navigation Details:", { ancestors, descendants });
+    return { ancestors, descendants };
+}
+
 // ========================
 //  UTILITY METHODS
 // ========================
 
 async function isDescendant(potentialAncestorId, categoryId) {
-    if (potentialAncestorId.equals(categoryId)) return true;
+    if (potentialAncestorId === categoryId) return true;
 
-    const relationships = await CategoryRelationship.find({ child: categoryId });
+    const relationships = await CategoryRelations.find({ child: categoryId });
     if (relationships.length === 0) return false;
 
     return Promise.any(relationships.map(r =>
-        this.isDescendant(potentialAncestorId, r.parent)
+        isDescendant(potentialAncestorId, r.parent)
     ));
 }
 
@@ -125,37 +178,41 @@ async function rebuildNavigationFromCategories() {
 //  RELATIONSHIP MANAGEMENT
 // ========================
 
-async function createRelationship(parentId, childId, type = 'hierarchical') {
-    if (parentId.equals(childId)) {
-        throw new InvalidOperationError('Cannot relate a category to itself');
+async function createRelationship(parentId, childId, type) {
+    if (parentId === childId) {
+        throw new Error('Cannot relate a category to itself');
     }
 
     // Check for circular references
     if (await isDescendant(childId, parentId)) {
-        throw new InvalidOperationError('This would create a circular reference');
+        throw new Error('This would create a circular reference');
     }
 
-    const existing = await CategoryRelationship.findOne({ parent: parentId, child: childId });
-    if (existing) throw new ConflictError('Relationship already exists');
+    const existing = await CategoryRelations.findOne({ parent: parentId, child: childId });
+    if (existing) throw new Error('Relationship already exists');
 
-    const relationship = new CategoryRelationship({
+    const relationship = new CategoryRelations({
         parent: parentId,
         child: childId,
         relationshipType: type
     });
 
-    return relationship.save();
+    relationship.save();
+    return relationship
 }
 
 async function getCategoryTree(categoryId) {
-    const ancestors = await CategoryRelationship.find({ child: categoryId })
-        .populate('parent')
-        .sort('-relationshipType'); // hierarchical first
+    // Fetch descendants
+    const category = await getCategoryById(categoryId)
+    if(!category) throw new Error ('category not found')
 
-    const descendants = await CategoryRelationship.find({ parent: categoryId })
-        .populate('child')
-        .sort('relationshipType sortOrder');
+    const descendants = await CategoryRelations.find({ parent: categoryId })
+        .populate('child') // Populate the child category
 
+    // Fetch ancestors
+    const ancestors = await CategoryRelations.find({ child: categoryId })
+        .populate('parent') // Populate the parent category
+    console.log(descendants, ancestors)
     return {
         ancestors: ancestors.map(r => r.parent),
         descendants: descendants.map(r => ({
@@ -164,7 +221,6 @@ async function getCategoryTree(categoryId) {
         }))
     };
 }
-
 
 // ========================
 //  NAVIGATION INTEGRATION
@@ -193,6 +249,7 @@ async function syncCategoryToNavigation(categoryId, navigationData = {}) {
 }
 
 export {
+    getCategoryTree, getNavigationDetails, getCategoryById,
     createCategory, getCategories, syncCategoryToNavigation,
-    deleteCategory
+    deleteCategory, createRelationship, getCategoryDetails, updateCategory,
 }
