@@ -7,6 +7,7 @@ const AuthRouter = Router()
 
 
 AuthRouter.post('/signup', asyncHandler(async(req, res)=>{
+    console.log('endpoint hit')
     try{
         const user = await AuthService.SignUpUser(req.body)
         res.status(201).send({
@@ -21,6 +22,10 @@ AuthRouter.post('/signup', asyncHandler(async(req, res)=>{
             message: error.message,
         })
     }
+}))
+
+AuthRouter.post('/sendcode', asyncHandler(async(req, res)=>{
+    
 }))
 
 

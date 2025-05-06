@@ -51,7 +51,7 @@ categoryRouter.get('/:id/relationships', asyncHandler(async(req, res)=>{
 }))
 
 categoryRouter.get('/:id/details', asyncHandler(async(req, res)=>{
-  console.log(req.params.id)
+  //console.log(req.params.id)
   try{
     const {category, products, subcategories, relatedCategories} = await 
     getCategoryDetails(req.params.id)

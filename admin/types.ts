@@ -29,6 +29,7 @@ export type CategoryAttributes = {
   export type Category = {
     _id: string;
     slug: string;
+    image: string;
     canonicalName: string;
     axis: 'occasion' | 'product-type' | 'theme' | 'demographic' | 'season' | 'collection';
     attributes?: CategoryAttributes;

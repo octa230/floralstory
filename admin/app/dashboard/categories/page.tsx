@@ -45,7 +45,7 @@ const ManageCategories = () => {
   });
   const [navFormData, setNavFormData] = useState({
     label: '',
-    icon: '',
+    image: '',
     parentId: null as string | null,
     sortOrder: 0
   });
@@ -60,10 +60,10 @@ const ManageCategories = () => {
 
     try {
       setLoadingImage(true)
-      const formData = new FormData();
-      formData.append('image', files[0]);
+      const formdata = new FormData();
+      formdata.append('image', files[0]);
 
-      const {data} = await axios.post<string>(`${URL}/upload`, formData, {
+      const {data} = await axios.post<string>(`${URL}/upload`, formdata, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
@@ -179,7 +179,7 @@ const ManageCategories = () => {
         targetType: 'category',
         category: selectedCategory._id,
         label: navFormData.label,
-        icon: navFormData.icon,
+        image: navFormData.icon,
         parentId: navFormData.parentId,
         sortOrder: navFormData.sortOrder
       };
@@ -197,7 +197,7 @@ const ManageCategories = () => {
   const flattenNavigation = (items: NavigationItem[], depth = 0): Array<NavigationItem & { depth: number }> => {
     return items.reduce<Array<NavigationItem & { depth: number }>>((acc, item) => {
       acc.push({ ...item, depth });
-      if (item.children) {
+      if (item.children && Array.isArray(item.children)) {
         acc.push(...flattenNavigation(item.children, depth + 1));
       }
       return acc;
@@ -285,7 +285,7 @@ const ManageCategories = () => {
                           setSelectedCategory(category);
                           setNavFormData({
                             label: category.canonicalName,
-                            icon: category.attributes?.icon || '',
+                            image: category.attributes?.icon || '',
                             parentId: null,
                             sortOrder: 0
                           });
@@ -348,9 +348,8 @@ const ManageCategories = () => {
                 onChange={handleFileChange}
                 //required
               />
-              {loadingImage ? (
-                <Spinner animation='grow'/>
-              ): formData.image && (
+              {loadingImage ? <Spinner animation='grow'/>
+              : (formData.image && (
                 <div className="mt-2">
                   <img
                     src={formData?.image}
@@ -358,7 +357,7 @@ const ManageCategories = () => {
                     style={{ maxHeight: '200px' }}
                   />
                 </div>
-              )}
+              ))}
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Category Type</Form.Label>
@@ -427,8 +426,8 @@ const ManageCategories = () => {
               <Form.Label>Icon (optional)</Form.Label>
               <Form.Control
                 type="text"
-                value={navFormData.icon}
-                onChange={(e) => setNavFormData({ ...navFormData, icon: e.target.value })}
+                value={navFormData.image}
+                onChange={(e) => setNavFormData({ ...navFormData, image: e.target.value })}
                 placeholder="emoji or icon name"
               />
             </Form.Group>
@@ -551,7 +550,7 @@ const ManageCategories = () => {
                 <Button
                   variant={relationshipForm.parentId === selectedCategory?._id ?
                     "primary" : "outline-secondary"}
-                  onClick={() => setRelationshipForm({
+                    onClick={() => setRelationshipForm({
                     ...relationshipForm,
                     parentId: selectedCategory?._id,
                     childId: ''

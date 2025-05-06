@@ -5,7 +5,8 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import { MDBBtn, MDBIcon } from 'mdb-react-ui-kit';
 import Link from 'next/link';
-import { URL } from '@/app/constants';
+import { URL } from '../../../../constants'
+
 
 const VerifyAccount = () => {
   const params = useParams();

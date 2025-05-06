@@ -56,6 +56,33 @@ class OrderService {
       throw error;
     }
   }
+
+  static async getOrders( user ){
+    try {
+      let page = 1;
+      let pageCount = 10;
+
+      const query = user.isAdmin ? {} : {'user._id': user._id} 
+      const totalOrders = await Order.countDocuments(query)
+      const totalPages = Math.ceil(totalOrders / pageCount);
+
+      const orders = await Order.find(query)
+        .skip((page -1) * pageCount)
+        .limit(pageCount)
+        .sort({createdAt: -1})
+
+    return {
+      orders, 
+      page,
+      pageCount,
+      totalOrders,
+      totalPages
+    }
+    } catch (error) {
+      console.log(error)
+      return { error: error.message };
+    }
+  }
 }
   
   export default OrderService;

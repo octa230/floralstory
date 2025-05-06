@@ -42,7 +42,7 @@ async function getCategoryById(id) {
 async function updateCategory(id, updates) {
     // Ensure this returns a category or null
     const category = await getCategoryById(id);
-    console.log(id, updates);
+    //console.log(id, updates);
 
     if (!category) throw new Error('Category not found');
 
@@ -212,7 +212,7 @@ async function getCategoryTree(categoryId) {
     // Fetch ancestors
     const ancestors = await CategoryRelations.find({ child: categoryId })
         .populate('parent') // Populate the parent category
-    console.log(descendants, ancestors)
+    //console.log(descendants, ancestors)
     return {
         ancestors: ancestors.map(r => r.parent),
         descendants: descendants.map(r => ({

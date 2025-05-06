@@ -15,7 +15,7 @@ import {
   MDBBtn,
   MDBIcon,
 } from 'mdb-react-ui-kit'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, redirect } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import { URL } from '../../constants'
@@ -32,7 +32,7 @@ const LoginPage = () => {
 
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect' || '/')
+  const redirecturl = searchParams.get('redirect' || '/')
 
 
   const handleSubmit = async (e) => {
@@ -53,10 +53,10 @@ const LoginPage = () => {
           token: data.token
         }
         login(cleanData)
-        console.log(cleanData)
+        //console.log(cleanData)
         
         //router.push('/')
-        router.push(redirect)
+        router.push(redirecturl || '/')
       } else {
         throw new Error(data.message || 'Login failed')
       }

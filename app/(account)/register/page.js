@@ -21,6 +21,8 @@ import {
 } from 'mdb-react-ui-kit'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import axios from 'axios'
+import { URL } from '../../constants'
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -30,18 +32,11 @@ const SignUpPage = () => {
     confirmPassword: '',
     phone: ''
   })
-  const [validationModal, setValidationModal] = useState(false)
-  const [verificationCode, setVerificationCode] = useState('')
-  const [generatedCode, setGeneratedCode] = useState('')
+
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [step, setStep] = useState(1) // 1: Form, 2: Verification
   const router = useRouter()
 
-  // Generate random 6-digit code
-  const generateVerificationCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString()
-  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -58,6 +53,7 @@ const SignUpPage = () => {
   }
 
   const handleSubmit = async (e) => {
+    console.log(formData)
     e.preventDefault()
     const validationError = validateForm()
     
@@ -66,49 +62,23 @@ const SignUpPage = () => {
       return
     }
 
-    // Show verification modal
-    const code = generateVerificationCode()
-    setGeneratedCode(code)
-    setValidationModal(true)
-    
-    // In a real app, you would send this code via SMS/email
-    console.log('Verification code:', code) // For demo purposes
-  }
-
-  const verifyCode = () => {
-    if (verificationCode !== generatedCode) {
-      setError('Invalid verification code')
-      return false
-    }
-    return true
-  }
-
-  const completeRegistration = async () => {
-    if (!verifyCode()) return
-
     setIsLoading(true)
     try {
       // Replace with your actual registration API call
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        throw new Error('Registration failed')
+      const {data} = await axios.post(`${URL}/auth/signup`, formData)
+      if(data && data.user){
+        console.log(data)
       }
 
-      router.push('/dashboard') // Redirect on success
+      router.push('/') // Redirect on success
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.')
-      setValidationModal(false)
     } finally {
       setIsLoading(false)
     }
+
   }
+
 
   return (
     <MDBContainer fluid className="p-4 bg-light min-vh-100 d-flex align-items-center">
@@ -125,7 +95,7 @@ const SignUpPage = () => {
                 <MDBAlert color="danger" dismissible onClose={() => setError('')}>
                   {error}
                 </MDBAlert>
-              )}
+              )} 
 
               <form onSubmit={handleSubmit}>
                 <MDBInput
@@ -214,57 +184,6 @@ const SignUpPage = () => {
           </MDBCard>
         </MDBCol>
       </MDBRow>
-
-      {/* Phone Verification Modal */}
-      <MDBModal show={validationModal} setShow={setValidationModal} staticBackdrop tabIndex='-1'>
-        <MDBModalDialog>
-          <MDBModalContent>
-            <MDBModalHeader>
-              <MDBModalTitle>Phone Verification</MDBModalTitle>
-            </MDBModalHeader>
-            <MDBModalBody>
-              <p>We've sent a 6-digit verification code to {formData.phone}</p>
-              
-              <MDBInput
-                label="Verification Code"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-                className="mb-3"
-                maxLength="6"
-              />
-              
-              {error && (
-                <MDBAlert color="danger" className="mb-3">
-                  {error}
-                </MDBAlert>
-              )}
-              
-              <p className="small text-muted">
-                Didn't receive code? <a href="#!" onClick={() => {
-                  const newCode = generateVerificationCode()
-                  setGeneratedCode(newCode)
-                  console.log('New code:', newCode) // For demo
-                }}>Resend</a>
-              </p>
-            </MDBModalBody>
-            <MDBModalFooter>
-              <MDBBtn color="secondary" onClick={() => setValidationModal(false)}>
-                Cancel
-              </MDBBtn>
-              <MDBBtn color="primary" onClick={completeRegistration} disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <MDBSpinner size="sm" role="status" tag="span" className="me-2" />
-                    Verifying...
-                  </>
-                ) : (
-                  'Verify & Complete'
-                )}
-              </MDBBtn>
-            </MDBModalFooter>
-          </MDBModalContent>
-        </MDBModalDialog>
-      </MDBModal>
     </MDBContainer>
   )
 }

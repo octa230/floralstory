@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Container,
   Button,
@@ -11,7 +11,8 @@ import {
   Stack,
   Alert,
   Form,
-  Offcanvas
+  Offcanvas,
+  Spinner
 } from 'react-bootstrap';
 import axios from 'axios'
 import { URL } from '@/constants';
@@ -22,11 +23,13 @@ const ManageProducts = () => {
     const [loading, setLoading] = useState(false)
     const [products, setProducts]= useState<ProductProps[]>([])
     const [showCanvas, setShowCanvas] = useState<boolean>(false)
+    const [loadingImage, setLoadingImage] = useState<boolean>(false)
     const [product, setProduct] = useState<ProductProps|null>( null)
     const [categories, setCategories] = useState<Category[]>([])
     const [formData, setFormData ] = useState({
         name:"",
         brand:"",
+        productType: '',
         price: 0,
         image: "",
         images: [],
@@ -37,6 +40,10 @@ const ManageProducts = () => {
 
     const handleInputChange=(field: string, value: string | number)=>{
         setFormData(prevState => ({...prevState, [field]: value}))
+    }
+
+    const setProductType=(pdctType: string)=>{
+        setFormData((prevState => ({...prevState, productType:  pdctType})))
     }
 
     const handleSelectProduct=async(productId: string)=> {
@@ -79,6 +86,33 @@ const ManageProducts = () => {
         
     }
 
+    const handleImageUpload = useCallback(async (files: FileList | null) => {
+        if (!files || files.length === 0) return;
+    
+        try {
+          setLoadingImage(true)
+          const formData = new FormData();
+          formData.append('image', files[0]);
+    
+          const {data} = await axios.post<string>(`${URL}/upload`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+    
+          setFormData(prev => ({ ...prev, image: data}));
+          setLoadingImage(false)
+        } catch (error) {
+          console.error('Upload failed:', error);
+        }finally{
+          setLoadingImage(false)
+        }
+      }, []);
+    
+    
+      const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        handleImageUpload(e.target.files);
+        //e.target.value = ''; 
+      };
+    
     useEffect(()=>{
         getProducts()
     }, [])
@@ -151,6 +185,17 @@ const ManageProducts = () => {
                         value={formData.brand}
                     />
                 </Form.Group>
+                <div className='m-2'>
+                {['product', 'accessory', 'collection', 'combo'].map((productType, index)=>(
+                    <Button className='p-2' 
+                    variant={ formData.productType === productType ? "primary" : 'btn-outline-primary'} 
+                    key={index}
+                    onClick={()=> setProductType(productType)}
+                    >
+                        {productType}
+                    </Button>
+                ))}
+                </div>
                 <Form.Group>
                     <Form.Label>Category</Form.Label>
                     <Form.Select onChange={(e)=> handleInputChange('category', e.target.value)}>
@@ -160,6 +205,26 @@ const ManageProducts = () => {
                         ))}
                     </Form.Select>
                 </Form.Group>
+                <Form.Group className="mb-3">
+              <Form.Label>Product Image</Form.Label>
+              <Form.Control
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                //required
+              />
+              {loadingImage ? (
+                <Spinner animation='grow'/>
+              ): formData.image && (
+                <div className="mt-2">
+                  <img
+                    src={formData?.image}
+                    alt="Preview"
+                    style={{ maxHeight: '200px' }}
+                  />
+                </div>
+              )}
+            </Form.Group>
                 <Button className='my-1' type='submit'>SAVE</Button>
             </Form>
         </Offcanvas.Body>
